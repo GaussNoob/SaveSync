@@ -1,0 +1,12 @@
+{
+  "appId": "com.savesync.app",
+  "appName": "SaveSync",
+  "webDir": "dashboard/dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

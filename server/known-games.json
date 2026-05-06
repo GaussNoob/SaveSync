@@ -1,0 +1,758 @@
+[
+  {
+    "id": "dark-souls-remastered",
+    "name": "Dark Souls Remastered",
+    "platform": "steam",
+    "steam_appid": "570940",
+    "save_paths": {
+      "windows": "%APPDATA%\\DarkSoulsRemastered",
+      "linux": "~/.steam/steam/steamapps/compatdata/570940/pfx/drive_c/users/steamuser/AppData/Roaming/DarkSoulsRemastered"
+    },
+    "extensions": [".sl2"],
+    "cloud_save": true,
+    "cloud_save_warning": "Desabilite o Steam Cloud para este jogo antes de usar o SaveSync"
+  },
+  {
+    "id": "dark-souls-2-scholar",
+    "name": "Dark Souls II: Scholar of the First Sin",
+    "platform": "steam",
+    "steam_appid": "335300",
+    "save_paths": {
+      "windows": "%APPDATA%\\DarkSoulsII",
+      "linux": "~/.steam/steam/steamapps/compatdata/335300/pfx/drive_c/users/steamuser/AppData/Roaming/DarkSoulsII"
+    },
+    "extensions": [".sl2"],
+    "cloud_save": false
+  },
+  {
+    "id": "dark-souls-3",
+    "name": "Dark Souls III",
+    "platform": "steam",
+    "steam_appid": "374320",
+    "save_paths": {
+      "windows": "%APPDATA%\\DarkSoulsIII",
+      "linux": "~/.steam/steam/steamapps/compatdata/374320/pfx/drive_c/users/steamuser/AppData/Roaming/DarkSoulsIII"
+    },
+    "extensions": [".sl2"],
+    "cloud_save": false
+  },
+  {
+    "id": "elden-ring",
+    "name": "Elden Ring",
+    "platform": "steam",
+    "steam_appid": "1245620",
+    "save_paths": {
+      "windows": "%APPDATA%\\EldenRing",
+      "linux": "~/.steam/steam/steamapps/compatdata/1245620/pfx/drive_c/users/steamuser/AppData/Roaming/EldenRing"
+    },
+    "extensions": [".sl2", ".co2"],
+    "cloud_save": true
+  },
+  {
+    "id": "hollow-knight",
+    "name": "Hollow Knight",
+    "platform": "steam",
+    "steam_appid": "367520",
+    "save_paths": {
+      "windows": "%APPDATA%\\..\\LocalLow\\Team Cherry\\Hollow Knight",
+      "linux": "~/.config/unity3d/Team Cherry/Hollow Knight"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "hades",
+    "name": "Hades",
+    "platform": "steam",
+    "steam_appid": "1145360",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Saved Games\\Hades",
+      "linux": "~/.steam/steam/steamapps/compatdata/1145360/pfx/drive_c/users/steamuser/Documents/Saved Games/Hades"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "hades-2",
+    "name": "Hades II",
+    "platform": "steam",
+    "steam_appid": "1145350",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Saved Games\\Hades II",
+      "linux": "~/.steam/steam/steamapps/compatdata/1145350/pfx/drive_c/users/steamuser/Documents/Saved Games/Hades II"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "celeste",
+    "name": "Celeste",
+    "platform": "steam",
+    "steam_appid": "504230",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Saved Games\\Celeste\\Saves",
+      "linux": "~/.local/share/Celeste/Saves"
+    },
+    "extensions": [".celeste"],
+    "cloud_save": true
+  },
+  {
+    "id": "stardew-valley",
+    "name": "Stardew Valley",
+    "platform": "steam",
+    "steam_appid": "413150",
+    "save_paths": {
+      "windows": "%APPDATA%\\StardewValley\\Saves",
+      "linux": "~/.config/StardewValley/Saves"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "terraria",
+    "name": "Terraria",
+    "platform": "steam",
+    "steam_appid": "105600",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Terraria",
+      "linux": "~/.local/share/Terraria"
+    },
+    "extensions": [".wld", ".plr", ".bak"],
+    "cloud_save": true
+  },
+  {
+    "id": "dead-cells",
+    "name": "Dead Cells",
+    "platform": "steam",
+    "steam_appid": "588650",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Motion Twin\\Dead Cells",
+      "linux": "~/.config/unity3d/Motion Twin/Dead Cells"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "cuphead",
+    "name": "Cuphead",
+    "platform": "steam",
+    "steam_appid": "268910",
+    "save_paths": {
+      "windows": "%APPDATA%\\Cuphead",
+      "linux": "~/.config/Cuphead"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "ori-and-the-blind-forest",
+    "name": "Ori and the Blind Forest",
+    "platform": "steam",
+    "steam_appid": "387290",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\Ori and the Blind Forest",
+      "linux": "~/.steam/steam/steamapps/compatdata/387290/pfx/drive_c/users/steamuser/AppData/Local/Ori and the Blind Forest"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "ori-and-the-will-of-the-wisps",
+    "name": "Ori and the Will of the Wisps",
+    "platform": "steam",
+    "steam_appid": "1057090",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\Ori and the Will of The Wisps",
+      "linux": "~/.steam/steam/steamapps/compatdata/1057090/pfx/drive_c/users/steamuser/AppData/Local/Ori and the Will of The Wisps"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "disco-elysium",
+    "name": "Disco Elysium",
+    "platform": "steam",
+    "steam_appid": "632470",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\ZAUM Studio\\Disco Elysium\\SaveGames",
+      "linux": "~/.config/unity3d/ZAUM Studio/Disco Elysium/SaveGames"
+    },
+    "extensions": [".ntwtf.zip"],
+    "cloud_save": true
+  },
+  {
+    "id": "baldurs-gate-3",
+    "name": "Baldur's Gate 3",
+    "platform": "steam",
+    "steam_appid": "1086940",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\Larian Studios\\Baldur's Gate 3\\PlayerProfiles\\Public\\Savegames\\Story",
+      "linux": "~/.steam/steam/steamapps/compatdata/1086940/pfx/drive_c/users/steamuser/AppData/Local/Larian Studios/Baldur's Gate 3/PlayerProfiles/Public/Savegames/Story"
+    },
+    "extensions": [".lsv"],
+    "cloud_save": true
+  },
+  {
+    "id": "cyberpunk-2077",
+    "name": "Cyberpunk 2077",
+    "platform": "steam",
+    "steam_appid": "1091500",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Saved Games\\CD Projekt Red\\Cyberpunk 2077",
+      "linux": "~/.steam/steam/steamapps/compatdata/1091500/pfx/drive_c/users/steamuser/Saved Games/CD Projekt Red/Cyberpunk 2077"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "the-witcher-3",
+    "name": "The Witcher 3: Wild Hunt",
+    "platform": "steam",
+    "steam_appid": "292030",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\The Witcher 3\\gamesaves",
+      "linux": "~/.steam/steam/steamapps/compatdata/292030/pfx/drive_c/users/steamuser/Documents/The Witcher 3/gamesaves"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "minecraft-java",
+    "name": "Minecraft: Java Edition",
+    "platform": "pc",
+    "save_paths": {
+      "windows": "%APPDATA%\\.minecraft\\saves",
+      "linux": "~/.minecraft/saves"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": false
+  },
+  {
+    "id": "factorio",
+    "name": "Factorio",
+    "platform": "steam",
+    "steam_appid": "427520",
+    "save_paths": {
+      "windows": "%APPDATA%\\Factorio\\saves",
+      "linux": "~/.factorio/saves"
+    },
+    "extensions": [".zip"],
+    "cloud_save": true
+  },
+  {
+    "id": "rimworld",
+    "name": "RimWorld",
+    "platform": "steam",
+    "steam_appid": "294100",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Ludeon Studios\\RimWorld by Ludeon Studios\\Saves",
+      "linux": "~/.config/unity3d/Ludeon Studios/RimWorld by Ludeon Studios/Saves"
+    },
+    "extensions": [".rws"],
+    "cloud_save": true
+  },
+  {
+    "id": "slay-the-spire",
+    "name": "Slay the Spire",
+    "platform": "steam",
+    "steam_appid": "646570",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\..\\LocalLow\\Mega Crit\\Slay the Spire",
+      "linux": "~/.config/unity3d/Mega Crit/Slay the Spire"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "binding-of-isaac-rebirth",
+    "name": "The Binding of Isaac: Rebirth",
+    "platform": "steam",
+    "steam_appid": "250900",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Binding of Isaac Rebirth",
+      "linux": "~/.steam/steam/steamapps/compatdata/250900/pfx/drive_c/users/steamuser/Documents/My Games/Binding of Isaac Rebirth"
+    },
+    "extensions": [".dat", ".ini"],
+    "cloud_save": true
+  },
+  {
+    "id": "undertale",
+    "name": "Undertale",
+    "platform": "steam",
+    "steam_appid": "391540",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\UNDERTALE",
+      "linux": "~/.config/UNDERTALE"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "deltarune",
+    "name": "Deltarune",
+    "platform": "steam",
+    "steam_appid": "1671210",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\DELTARUNE",
+      "linux": "~/.config/DELTARUNE"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "omori",
+    "name": "OMORI",
+    "platform": "steam",
+    "steam_appid": "1150690",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\OMORI",
+      "linux": "~/.steam/steam/steamapps/compatdata/1150690/pfx/drive_c/users/steamuser/AppData/Local/OMORI"
+    },
+    "extensions": [".rpgsave"],
+    "cloud_save": true
+  },
+  {
+    "id": "subnautica",
+    "name": "Subnautica",
+    "platform": "steam",
+    "steam_appid": "264710",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Unknown Worlds\\Subnautica\\Subnautica\\SavedGames",
+      "linux": "~/.config/unity3d/Unknown Worlds/Subnautica/Subnautica/SavedGames"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "subnautica-below-zero",
+    "name": "Subnautica: Below Zero",
+    "platform": "steam",
+    "steam_appid": "848450",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Unknown Worlds\\Subnautica Below Zero\\Subnautica\\SavedGames",
+      "linux": "~/.config/unity3d/Unknown Worlds/Subnautica Below Zero/Subnautica/SavedGames"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "no-mans-sky",
+    "name": "No Man's Sky",
+    "platform": "steam",
+    "steam_appid": "275850",
+    "save_paths": {
+      "windows": "%APPDATA%\\HelloGames\\NMS",
+      "linux": "~/.steam/steam/steamapps/compatdata/275850/pfx/drive_c/users/steamuser/AppData/Roaming/HelloGames/NMS"
+    },
+    "extensions": [".hg"],
+    "cloud_save": true
+  },
+  {
+    "id": "skyrim-special-edition",
+    "name": "The Elder Scrolls V: Skyrim Special Edition",
+    "platform": "steam",
+    "steam_appid": "489830",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Skyrim Special Edition\\Saves",
+      "linux": "~/.steam/steam/steamapps/compatdata/489830/pfx/drive_c/users/steamuser/Documents/My Games/Skyrim Special Edition/Saves"
+    },
+    "extensions": [".ess", ".skse"],
+    "cloud_save": true
+  },
+  {
+    "id": "fallout-4",
+    "name": "Fallout 4",
+    "platform": "steam",
+    "steam_appid": "377160",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Fallout4\\Saves",
+      "linux": "~/.steam/steam/steamapps/compatdata/377160/pfx/drive_c/users/steamuser/Documents/My Games/Fallout4/Saves"
+    },
+    "extensions": [".fos"],
+    "cloud_save": true
+  },
+  {
+    "id": "fallout-new-vegas",
+    "name": "Fallout: New Vegas",
+    "platform": "steam",
+    "steam_appid": "22380",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\FalloutNV\\Saves",
+      "linux": "~/.steam/steam/steamapps/compatdata/22380/pfx/drive_c/users/steamuser/Documents/My Games/FalloutNV/Saves"
+    },
+    "extensions": [".fos"],
+    "cloud_save": true
+  },
+  {
+    "id": "mass-effect-legendary-edition",
+    "name": "Mass Effect Legendary Edition",
+    "platform": "steam",
+    "steam_appid": "1328670",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\BioWare\\Mass Effect Legendary Edition\\Save",
+      "linux": "~/.steam/steam/steamapps/compatdata/1328670/pfx/drive_c/users/steamuser/Documents/BioWare/Mass Effect Legendary Edition/Save"
+    },
+    "extensions": [".pcsav"],
+    "cloud_save": true
+  },
+  {
+    "id": "red-dead-redemption-2",
+    "name": "Red Dead Redemption 2",
+    "platform": "steam",
+    "steam_appid": "1174180",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Rockstar Games\\Red Dead Redemption 2\\Profiles",
+      "linux": "~/.steam/steam/steamapps/compatdata/1174180/pfx/drive_c/users/steamuser/Documents/Rockstar Games/Red Dead Redemption 2/Profiles"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "gta-v",
+    "name": "Grand Theft Auto V",
+    "platform": "steam",
+    "steam_appid": "271590",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Rockstar Games\\GTA V\\Profiles",
+      "linux": "~/.steam/steam/steamapps/compatdata/271590/pfx/drive_c/users/steamuser/Documents/Rockstar Games/GTA V/Profiles"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "resident-evil-4-remake",
+    "name": "Resident Evil 4",
+    "platform": "steam",
+    "steam_appid": "2050650",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\CAPCOM\\RESIDENT EVIL 4",
+      "linux": "~/.steam/steam/steamapps/compatdata/2050650/pfx/drive_c/users/steamuser/Documents/CAPCOM/RESIDENT EVIL 4"
+    },
+    "extensions": [".bin"],
+    "cloud_save": true
+  },
+  {
+    "id": "monster-hunter-world",
+    "name": "Monster Hunter: World",
+    "platform": "steam",
+    "steam_appid": "582010",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\Local\\CAPCOM\\MONSTER HUNTER WORLD",
+      "linux": "~/.steam/steam/steamapps/compatdata/582010/pfx/drive_c/users/steamuser/AppData/Local/CAPCOM/MONSTER HUNTER WORLD"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "monster-hunter-rise",
+    "name": "Monster Hunter Rise",
+    "platform": "steam",
+    "steam_appid": "1446780",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\Roaming\\MonsterHunterRise",
+      "linux": "~/.steam/steam/steamapps/compatdata/1446780/pfx/drive_c/users/steamuser/AppData/Roaming/MonsterHunterRise"
+    },
+    "extensions": [".bin"],
+    "cloud_save": true
+  },
+  {
+    "id": "persona-5-royal",
+    "name": "Persona 5 Royal",
+    "platform": "steam",
+    "steam_appid": "1687950",
+    "save_paths": {
+      "windows": "%APPDATA%\\SEGA\\P5R\\Steam",
+      "linux": "~/.steam/steam/steamapps/compatdata/1687950/pfx/drive_c/users/steamuser/AppData/Roaming/SEGA/P5R/Steam"
+    },
+    "extensions": [".DAT"],
+    "cloud_save": true
+  },
+  {
+    "id": "nier-automata",
+    "name": "NieR:Automata",
+    "platform": "steam",
+    "steam_appid": "524220",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\NieR_Automata",
+      "linux": "~/.steam/steam/steamapps/compatdata/524220/pfx/drive_c/users/steamuser/Documents/My Games/NieR_Automata"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "death-stranding",
+    "name": "Death Stranding",
+    "platform": "steam",
+    "steam_appid": "1190460",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\KojimaProductions\\DeathStranding",
+      "linux": "~/.steam/steam/steamapps/compatdata/1190460/pfx/drive_c/users/steamuser/AppData/Local/KojimaProductions/DeathStranding"
+    },
+    "extensions": [".dat"],
+    "cloud_save": true
+  },
+  {
+    "id": "control",
+    "name": "Control Ultimate Edition",
+    "platform": "steam",
+    "steam_appid": "870780",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\Remedy\\Control\\Default-Epic-User",
+      "linux": "~/.steam/steam/steamapps/compatdata/870780/pfx/drive_c/users/steamuser/AppData/Local/Remedy/Control/Default-Epic-User"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "outer-wilds",
+    "name": "Outer Wilds",
+    "platform": "steam",
+    "steam_appid": "753640",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Mobius Digital\\Outer Wilds",
+      "linux": "~/.config/unity3d/Mobius Digital/Outer Wilds"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "risk-of-rain-2",
+    "name": "Risk of Rain 2",
+    "platform": "steam",
+    "steam_appid": "632360",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Hopoo Games, LLC\\Risk of Rain 2\\UserProfiles",
+      "linux": "~/.config/unity3d/Hopoo Games, LLC/Risk of Rain 2/UserProfiles"
+    },
+    "extensions": [".xml"],
+    "cloud_save": true
+  },
+  {
+    "id": "vampire-survivors",
+    "name": "Vampire Survivors",
+    "platform": "steam",
+    "steam_appid": "1794680",
+    "save_paths": {
+      "windows": "%APPDATA%\\Vampire_Survivors\\Local Storage\\leveldb",
+      "linux": "~/.config/Vampire_Survivors/Local Storage/leveldb"
+    },
+    "extensions": [".ldb", ".log"],
+    "cloud_save": true
+  },
+  {
+    "id": "brotato",
+    "name": "Brotato",
+    "platform": "steam",
+    "steam_appid": "1942280",
+    "save_paths": {
+      "windows": "%APPDATA%\\Brotato",
+      "linux": "~/.local/share/Steam/steamapps/compatdata/1942280/pfx/drive_c/users/steamuser/AppData/Roaming/Brotato"
+    },
+    "extensions": [".json"],
+    "cloud_save": true
+  },
+  {
+    "id": "balatro",
+    "name": "Balatro",
+    "platform": "steam",
+    "steam_appid": "2379780",
+    "save_paths": {
+      "windows": "%APPDATA%\\Balatro",
+      "linux": "~/.local/share/Steam/steamapps/compatdata/2379780/pfx/drive_c/users/steamuser/AppData/Roaming/Balatro"
+    },
+    "extensions": [".jkr"],
+    "cloud_save": true
+  },
+  {
+    "id": "dave-the-diver",
+    "name": "Dave the Diver",
+    "platform": "steam",
+    "steam_appid": "1868140",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\nexon\\DAVE THE DIVER",
+      "linux": "~/.config/unity3d/nexon/DAVE THE DIVER"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "satisfactory",
+    "name": "Satisfactory",
+    "platform": "steam",
+    "steam_appid": "526870",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\FactoryGame\\Saved\\SaveGames",
+      "linux": "~/.steam/steam/steamapps/compatdata/526870/pfx/drive_c/users/steamuser/AppData/Local/FactoryGame/Saved/SaveGames"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "oxygen-not-included",
+    "name": "Oxygen Not Included",
+    "platform": "steam",
+    "steam_appid": "457140",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Klei\\OxygenNotIncluded\\save_files",
+      "linux": "~/.config/unity3d/Klei/Oxygen Not Included/save_files"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "dont-starve-together",
+    "name": "Don't Starve Together",
+    "platform": "steam",
+    "steam_appid": "322330",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Klei\\DoNotStarveTogether",
+      "linux": "~/.klei/DoNotStarveTogether"
+    },
+    "extensions": [],
+    "save_type": "directory",
+    "cloud_save": true
+  },
+  {
+    "id": "crusader-kings-3",
+    "name": "Crusader Kings III",
+    "platform": "steam",
+    "steam_appid": "1158310",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Paradox Interactive\\Crusader Kings III\\save games",
+      "linux": "~/.local/share/Paradox Interactive/Crusader Kings III/save games"
+    },
+    "extensions": [".ck3"],
+    "cloud_save": true
+  },
+  {
+    "id": "civilization-vi",
+    "name": "Sid Meier's Civilization VI",
+    "platform": "steam",
+    "steam_appid": "289070",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Sid Meier's Civilization VI\\Saves",
+      "linux": "~/.local/share/aspyr-media/Sid Meier's Civilization VI/Saves"
+    },
+    "extensions": [".Civ6Save"],
+    "cloud_save": true
+  },
+  {
+    "id": "xcom-2",
+    "name": "XCOM 2",
+    "platform": "steam",
+    "steam_appid": "268500",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\XCOM2\\XComGame\\SaveData",
+      "linux": "~/.local/share/feral-interactive/XCOM2/VFS/Local/my games/XCOM2/XComGame/SaveData"
+    },
+    "extensions": [".bin"],
+    "cloud_save": true
+  },
+  {
+    "id": "portal-2",
+    "name": "Portal 2",
+    "platform": "steam",
+    "steam_appid": "620",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Portal 2",
+      "linux": "~/.steam/steam/userdata"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "half-life-2",
+    "name": "Half-Life 2",
+    "platform": "steam",
+    "steam_appid": "220",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\My Games\\Half-Life 2",
+      "linux": "~/.steam/steam/userdata"
+    },
+    "extensions": [".sav"],
+    "cloud_save": true
+  },
+  {
+    "id": "sekiro",
+    "name": "Sekiro: Shadows Die Twice",
+    "platform": "steam",
+    "steam_appid": "814380",
+    "save_paths": {
+      "windows": "%APPDATA%\\Sekiro",
+      "linux_proton": "~/.steam/steam/steamapps/compatdata/814380/pfx/drive_c/users/steamuser/AppData/Roaming/Sekiro"
+    },
+    "extensions": [".sl2"],
+    "save_type": "files",
+    "cloud_save": true,
+    "cloud_save_warning": true,
+    "search_aliases": ["sekiro", "fromsoft", "shadows die twice"]
+  },
+  {
+    "id": "blasphemous",
+    "name": "Blasphemous",
+    "platform": "steam",
+    "steam_appid": "774361",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\TheGameKitchen\\Blasphemous",
+      "linux": "~/.config/unity3d/TheGameKitchen/Blasphemous"
+    },
+    "extensions": [".save"],
+    "save_type": "files",
+    "cloud_save": true,
+    "search_aliases": ["metroidvania", "blasphemous"]
+  },
+  {
+    "id": "shovel-knight",
+    "name": "Shovel Knight: Treasure Trove",
+    "platform": "steam",
+    "steam_appid": "250760",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\Documents\\Shovel Knight",
+      "linux": "~/.local/share/Yacht Club Games/Shovel Knight"
+    },
+    "extensions": [".sav"],
+    "save_type": "files",
+    "cloud_save": true,
+    "search_aliases": ["shovel", "treasure trove"]
+  },
+  {
+    "id": "returnal",
+    "name": "Returnal",
+    "platform": "steam",
+    "steam_appid": "1649240",
+    "save_paths": {
+      "windows": "%LOCALAPPDATA%\\Returnal\\Steam\\Saved\\SaveGames",
+      "linux_proton": "~/.steam/steam/steamapps/compatdata/1649240/pfx/drive_c/users/steamuser/AppData/Local/Returnal/Steam/Saved/SaveGames"
+    },
+    "extensions": [".sav"],
+    "save_type": "files",
+    "cloud_save": true,
+    "search_aliases": ["returnal", "housemarque"]
+  },
+  {
+    "id": "spiritfarer",
+    "name": "Spiritfarer",
+    "platform": "steam",
+    "steam_appid": "972660",
+    "save_paths": {
+      "windows": "%USERPROFILE%\\AppData\\LocalLow\\Thunder Lotus Games\\Spiritfarer",
+      "linux": "~/.config/unity3d/Thunder Lotus Games/Spiritfarer"
+    },
+    "extensions": [".dat"],
+    "save_type": "files",
+    "cloud_save": true,
+    "search_aliases": ["spiritfarer", "thunder lotus"]
+  }
+]

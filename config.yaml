@@ -1,0 +1,104 @@
+savesync:
+  version_limit: 5
+  sync_on_change: true
+  notify_desktop: true
+  scan_on_startup: true
+custom_games:
+  - name: Meu Jogo Indie
+    saves_path: C:/Users/eu/AppData/Local/MeuJogo/saves
+    extensions:
+      - .sav
+emulators:
+  - name: RetroArch
+    saves_path:
+      windows: "%APPDATA%\\RetroArch\\saves"
+      linux: ~/.config/retroarch/saves
+      mac: ~/Library/Application Support/RetroArch/saves
+    states_path:
+      windows: "%APPDATA%\\RetroArch\\states"
+      linux: ~/.config/retroarch/states
+      mac: ~/Library/Application Support/RetroArch/states
+    extensions:
+      - .srm
+      - .state
+  - name: Dolphin
+    saves_path:
+      windows:
+        - "%APPDATA%\\Dolphin Emulator"
+        - "%DOCUMENTS%\\Dolphin Emulator"
+      linux:
+        - ~/.local/share/dolphin-emu
+        - ~/.dolphin-emu
+        - ~/.var/app/org.DolphinEmu.dolphin-emu/data/dolphin-emu
+      mac: ~/Library/Application Support/Dolphin
+    extensions:
+      - .gci
+      - .raw
+      - .bin
+  - name: Yuzu
+    saves_path:
+      windows: "%APPDATA%\\yuzu\\nand\\user\\save"
+      linux:
+        - ~/.local/share/yuzu/nand/user/save
+        - ~/.var/app/org.yuzu_emu.yuzu/data/yuzu/nand/user/save
+      mac:
+        - ~/Library/Application Support/yuzu/nand/user/save
+        - ~/.local/share/yuzu/nand/user/save
+    extensions: []
+    save_type: directory
+  - name: Eden
+    saves_path:
+      windows: "%APPDATA%\\Eden\\nand\\user\\save"
+      linux:
+        - ~/.local/share/eden/nand/user/save
+        - ~/.var/app/dev.eden_emu.eden/data/eden/nand/user/save
+      mac:
+        - ~/Library/Application Support/eden/nand/user/save
+        - ~/.local/share/eden/nand/user/save
+    extensions: []
+    save_type: directory
+  - name: Ryujinx
+    saves_path:
+      windows: "%APPDATA%\\Ryujinx\\bis\\user\\save"
+      linux:
+        - ~/.config/Ryujinx/bis/user/save
+        - ~/.var/app/org.ryujinx.Ryujinx/config/Ryujinx/bis/user/save
+      mac: ~/Library/Application Support/Ryujinx/bis/user/save
+    extensions: []
+    save_type: directory
+  - name: Cemu
+    saves_path:
+      windows:
+        - "%USERPROFILE%\\Documents\\Cemu\\mlc01\\usr\\save"
+        - "%USERPROFILE%\\Documents\\mlc01\\usr\\save"
+      linux:
+        - ~/.local/share/Cemu/mlc01/usr/save
+        - ~/.var/app/info.cemu.Cemu/data/Cemu/mlc01/usr/save
+      mac: ~/Library/Application Support/Cemu/mlc01/usr/save
+    extensions: []
+    save_type: directory
+  - name: PCSX2
+    saves_path: ~/Documents/PCSX2/memcards
+    extensions:
+      - .ps2
+  - name: RPCS3
+    saves_path: ~/Documents/rpcs3/dev_hdd0/home/00000001/savedata
+    extensions: []
+    save_type: directory
+syncthing:
+  api_url: http://localhost:8384
+  api_key: ""
+  folder_id: savesync-folder
+  enabled: true
+  local_path: /home/gauss/savesync/games
+steam:
+  userdata_path: C:/Program Files (x86)/Steam/userdata
+  disable_cloud_on_conflict: false
+cloud:
+  enabled: true
+  provider: google_drive
+  remote_name: savesync-gdrive
+  remote_path: SaveSync/
+  sync_interval_minutes: 50
+  bidirectional: true
+  on_conflict: keep_both

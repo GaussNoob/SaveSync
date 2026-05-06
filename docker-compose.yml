@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    ports:
+      - "8384:8384"
+      - "22000:22000"
+      - "21027:21027/udp"
+    volumes:
+      - ./saves:/var/syncthing/saves
+      - syncthing-config:/var/syncthing/config
+    restart: unless-stopped
+
+  savesync:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - SAVESYNC_DATA_DIR=/app/savesync-data
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./saves:/app/saves
+      - ./data:/app/savesync-data
+      - ./rclone:/root/.config/rclone
+      - /home:/home:ro
+      - /mnt/c/Users:/mnt/c/Users:ro
+    depends_on:
+      - syncthing
+    restart: unless-stopped
+
+volumes:
+  syncthing-config:

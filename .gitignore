@@ -1,0 +1,11 @@
+node_modules/
+dashboard/dist/
+data/
+saves/
+games/
+conflicts/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.log
+.DS_Store

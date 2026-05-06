@@ -1,0 +1,46 @@
+{
+  "name": "savesync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run dashboard:dev\"",
+    "electron:dev": "concurrently \"npm run server:dev\" \"npm run dashboard:dev\" \"wait-on http://localhost:3000 http://localhost:5173 && electron electron/main.js --dev\"",
+    "electron:start": "npm run build && electron electron/main.js",
+    "server:dev": "node --watch server/index.js",
+    "dashboard:dev": "vite --host 0.0.0.0 --config dashboard/vite.config.js",
+    "build": "vite build --config dashboard/vite.config.js",
+    "android:add": "npm run build && cap add android",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "npm run android:sync && cap run android",
+    "android:build": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "better-sqlite3": "^11.9.1",
+    "chokidar": "^4.0.3",
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.5",
+    "electron": "^35.1.5",
+    "express": "^4.21.2",
+    "node-notifier": "^10.0.1",
+    "pinia": "^3.0.1",
+    "vite": "^6.2.5",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "wait-on": "^8.0.3",
+    "ws": "^8.18.1",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}
