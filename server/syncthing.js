@@ -1,29 +1,44 @@
 import path from 'node:path';
-import { ARCHIVE_ROOT, ensureDir, readConfig } from './utils.js';
+import { ARCHIVE_ROOT, ensureArchiveControlFiles, ensureDir, readConfig } from './utils.js';
+import { samePath } from './path-policy.js';
+
+const DEFAULT_SYNCTHING_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]', 'syncthing'];
 
 export class SyncthingClient {
   constructor(config = readConfig()) {
     this.enabled = config.syncthing?.enabled !== false;
-    this.apiUrl = config.syncthing?.api_url || 'http://localhost:8384';
+    this.apiUrl = normalizeSyncthingApiUrl(
+      process.env.SYNCTHING_API_URL || config.syncthing?.api_url || 'http://localhost:8384'
+    );
     const configuredKey = config.syncthing?.api_key === 'YOUR_KEY_HERE' ? '' : config.syncthing?.api_key;
-    this.apiKey = configuredKey || process.env.SYNCTHING_API_KEY || '';
-    this.folderId = config.syncthing?.folder_id || 'savesync-folder';
-    this.folderPath = path.resolve(config.syncthing?.local_path || ARCHIVE_ROOT);
+    this.apiKey = process.env.SYNCTHING_API_KEY || configuredKey || '';
+    this.folderId = normalizeFolderId(config.syncthing?.folder_id || 'savesync-folder');
+    this.folderPath = path.resolve(ARCHIVE_ROOT);
+    this.deviceIds = new Set(
+      (Array.isArray(config.syncthing?.device_ids) ? config.syncthing.device_ids : [])
+        .map(value => String(value).trim())
+        .filter(Boolean)
+    );
   }
 
   async request(endpoint, options = {}) {
     try {
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      };
+      const {
+        allowNotFound = false,
+        headers: customHeaders,
+        signal,
+        ...fetchOptions
+      } = options;
+      const headers = { 'Content-Type': 'application/json', ...(customHeaders || {}) };
       if (this.apiKey) headers['X-API-Key'] = this.apiKey;
-
       const response = await fetch(`${this.apiUrl}${endpoint}`, {
-        ...options,
-        headers
+        ...fetchOptions,
+        headers,
+        redirect: 'error',
+        signal: signal || AbortSignal.timeout(15_000)
       });
       if (!response.ok) {
+        if (response.status === 404 && allowNotFound) return null;
         if (response.status === 401 || response.status === 403) {
           throw new Error('Syncthing recusou a API Key. Confira a chave em Ações -> Configurações -> GUI.');
         }
@@ -32,24 +47,18 @@ export class SyncthingClient {
       const text = await response.text();
       return text ? JSON.parse(text) : {};
     } catch (error) {
-      if (error instanceof TypeError) {
-        throw new Error(`Syncthing inacessível em ${this.apiUrl}. Verifique se o serviço está aberto e se a API GUI está ativa.`);
+      if (error instanceof TypeError || error.name === 'TimeoutError') {
+        throw new Error(`Syncthing inacessível em ${this.apiUrl}. Verifique a API GUI e a allowlist de hosts.`);
       }
       throw error;
     }
   }
 
-  async status() {
-    return this.request('/rest/system/status');
-  }
-
-  async connections() {
-    return this.request('/rest/system/connections');
-  }
+  async status() { return this.request('/rest/system/status'); }
+  async connections() { return this.request('/rest/system/connections'); }
 
   async devices() {
-    const config = await this.request('/rest/config');
-    return config.devices || [];
+    return this.request('/rest/config/devices');
   }
 
   async folderStatus(folderId = this.folderId) {
@@ -61,60 +70,78 @@ export class SyncthingClient {
   }
 
   async getFolder(folderId = this.folderId) {
-    const config = await this.request('/rest/config');
-    return (config.folders || []).find(folder => folder.id === folderId) || null;
+    const normalizedFolderId = normalizeFolderId(folderId);
+    return this.request(`/rest/config/folders/${encodeURIComponent(normalizedFolderId)}`, {
+      allowNotFound: true
+    });
   }
 
   async ensureFolder(folderPath = this.folderPath, folderId = this.folderId) {
-    ensureDir(folderPath);
-    const config = await this.request('/rest/config');
-    const devices = (config.devices || []).map(device => ({ deviceID: device.deviceID }));
-    const folders = config.folders || [];
-    const index = folders.findIndex(folder => folder.id === folderId);
+    if (!samePath(folderPath, this.folderPath)) throw new Error('A pasta Syncthing deve ser o arquivo gerenciado do SaveSync.');
+    ensureDir(this.folderPath);
+    ensureArchiveControlFiles();
+    const normalizedFolderId = normalizeFolderId(folderId);
+    const [folder, devices] = await Promise.all([
+      this.getFolder(normalizedFolderId),
+      this.devices()
+    ]);
+    const allowedDevices = devices
+      .filter(device => this.deviceIds.has(device.deviceID))
+      .map(device => ({ deviceID: device.deviceID }));
 
-    if (index === -1) {
-      folders.push({
-        id: folderId,
+    if (!folder) {
+      const newFolder = {
+        id: normalizedFolderId,
         label: 'SaveSync',
-        path: path.resolve(folderPath),
+        path: this.folderPath,
         type: 'sendreceive',
-        devices
+        devices: allowedDevices
+      };
+      await this.request('/rest/config/folders', {
+        method: 'POST',
+        body: JSON.stringify(newFolder)
       });
-      config.folders = folders;
-      await this.request('/rest/config', { method: 'PUT', body: JSON.stringify(config) });
-      return folders.at(-1);
+      return newFolder;
     }
 
-    const folder = folders[index];
-    const knownDevices = new Set((folder.devices || []).map(device => device.deviceID));
-    const mergedDevices = [
-      ...(folder.devices || []),
-      ...devices.filter(device => !knownDevices.has(device.deviceID))
-    ];
-    const nextFolder = {
-      ...folder,
-      label: folder.label || 'SaveSync',
-      path: path.resolve(folder.path || folderPath),
-      type: folder.type || 'sendreceive',
-      devices: mergedDevices
-    };
-
-    if (JSON.stringify(folder) !== JSON.stringify(nextFolder)) {
-      folders[index] = nextFolder;
-      config.folders = folders;
-      await this.request('/rest/config', { method: 'PUT', body: JSON.stringify(config) });
+    if (!samePath(path.resolve(folder.path), this.folderPath)) {
+      throw new Error(`O folder ID "${normalizedFolderId}" já aponta para outra pasta no Syncthing.`);
     }
-    return nextFolder;
+    return folder;
   }
 
   async syncFolder(folderPath = this.folderPath, folderId = this.folderId) {
-    if (!this.enabled) {
-      return { online: false, disabled: true, folder: null, scan: null };
-    }
+    if (!this.enabled) return { online: false, disabled: true, folder: null, scan: null };
     const folder = await this.ensureFolder(folderPath, folderId);
     const scan = await this.scan(folderId);
     return { folder, scan };
   }
+}
+
+export function normalizeSyncthingApiUrl(input) {
+  let url;
+  try {
+    url = new URL(String(input || '').trim());
+  } catch {
+    throw new Error('Informe uma URL de API Syncthing válida.');
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('A URL Syncthing deve conter apenas protocolo, host e porta.');
+  }
+  const allowedHosts = new Set([
+    ...DEFAULT_SYNCTHING_HOSTS,
+    ...String(process.env.SAVESYNC_SYNCTHING_HOSTS || '').split(',')
+  ].map(host => host.trim().toLowerCase()).filter(Boolean));
+  if (!allowedHosts.has(url.hostname.toLowerCase())) {
+    throw new Error(`Host Syncthing não permitido: ${url.hostname}. Configure SAVESYNC_SYNCTHING_HOSTS para liberá-lo.`);
+  }
+  return url.origin;
+}
+
+export function normalizeFolderId(input) {
+  const value = String(input || '').trim();
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(value)) throw new Error('ID de pasta Syncthing inválido.');
+  return value;
 }
 
 export default SyncthingClient;

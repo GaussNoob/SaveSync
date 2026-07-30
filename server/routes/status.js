@@ -1,24 +1,17 @@
 import express from 'express';
-import fs from 'node:fs';
-import path from 'node:path';
-import YAML from 'yaml';
 import { listDevices, listGames } from '../db.js';
-import { filterUnavailableGames } from '../detector.js';
-import SyncthingClient from '../syncthing.js';
-import { CONFIG_PATH, readConfig, safeStat } from '../utils.js';
+import SyncthingClient, { normalizeFolderId, normalizeSyncthingApiUrl } from '../syncthing.js';
+import { ARCHIVE_ROOT, readConfig, safeStat, writeConfig } from '../utils.js';
 import { archiveAllEnabled, rotateAllVersions } from '../versioning.js';
 import { debounceCloudSync } from '../cloud-sync.js';
+import { getDataLockStatus, withDataLock } from '../sync-coordinator.js';
 
 const router = express.Router();
 
-function writeConfig(config) {
-  fs.writeFileSync(CONFIG_PATH, YAML.stringify(config), 'utf8');
-}
-
 function normalizeVersionLimit(input) {
   const value = Number(input);
-  if (!Number.isFinite(value) || value < 1) {
-    throw new Error('O limite de backups precisa ser de pelo menos 1.');
+  if (!Number.isFinite(value) || value < 1 || value > 1000) {
+    throw new Error('O limite de backups deve ficar entre 1 e 1000.');
   }
   return Math.floor(value);
 }
@@ -27,27 +20,19 @@ function publicSyncthingSettings(config) {
   const syncthing = config.syncthing || {};
   return {
     enabled: syncthing.enabled !== false,
-    api_url: syncthing.api_url || 'http://localhost:8384',
-    api_key_set: Boolean(syncthing.api_key && syncthing.api_key !== 'YOUR_KEY_HERE'),
+    api_url: process.env.SYNCTHING_API_URL || syncthing.api_url || 'http://localhost:8384',
+    api_key_set: Boolean(process.env.SYNCTHING_API_KEY || (syncthing.api_key && syncthing.api_key !== 'YOUR_KEY_HERE')),
     folder_id: syncthing.folder_id || 'savesync-folder',
-    local_path: syncthing.local_path || ''
+    local_path: ARCHIVE_ROOT
   };
 }
 
 function normalizeSyncthingConfig(input = {}, current = {}) {
   const enabled = input.enabled !== undefined ? Boolean(input.enabled) : current.enabled !== false;
-  const apiUrl = String(input.api_url || current.api_url || 'http://localhost:8384').trim().replace(/\/$/, '');
-  const folderId = String(input.folder_id || current.folder_id || 'savesync-folder').trim();
-  const localPath = String(input.local_path || current.local_path || '').trim();
+  const apiUrl = normalizeSyncthingApiUrl(input.api_url || current.api_url || 'http://localhost:8384');
+  const folderId = normalizeFolderId(input.folder_id || current.folder_id || 'savesync-folder');
   const apiKeyInput = input.api_key === undefined ? undefined : String(input.api_key).trim();
   const currentApiKey = current.api_key === 'YOUR_KEY_HERE' ? '' : current.api_key;
-
-  if (!apiUrl || !/^https?:\/\//i.test(apiUrl)) {
-    throw new Error('Informe uma URL de API Syncthing válida, começando com http:// ou https://.');
-  }
-  if (!folderId) {
-    throw new Error('Informe um ID de pasta P2P.');
-  }
 
   const next = {
     ...current,
@@ -55,9 +40,8 @@ function normalizeSyncthingConfig(input = {}, current = {}) {
     api_url: apiUrl,
     api_key: apiKeyInput ? apiKeyInput : currentApiKey,
     folder_id: folderId,
+    local_path: ARCHIVE_ROOT
   };
-  if (localPath) next.local_path = path.resolve(localPath);
-  else delete next.local_path;
   return next;
 }
 
@@ -66,7 +50,7 @@ router.get('/', async (_req, res) => {
   const client = new SyncthingClient(config);
   const settings = publicSyncthingSettings(config);
   const payload = {
-    games: decorateGames(filterUnavailableGames(listGames(), config)),
+    games: decorateGames(listGames()),
     devices: listDevices(),
     syncthing: {
       ...settings,
@@ -77,7 +61,8 @@ router.get('/', async (_req, res) => {
       version_limit: config.savesync?.version_limit || 10,
       sync_on_change: config.savesync?.sync_on_change !== false,
       notify_desktop: config.savesync?.notify_desktop !== false
-    }
+    },
+    operations: getDataLockStatus()
   };
   if (!settings.enabled) {
     payload.syncthing.disabled = true;
@@ -110,22 +95,29 @@ router.get('/', async (_req, res) => {
 });
 
 router.post('/sync', async (_req, res) => {
-  const local = archiveAllEnabled();
-  if (local.archived.length) debounceCloudSync();
   try {
+    const local = await withDataLock('api:sync', () => archiveAllEnabled());
     const config = readConfig();
+    let syncthing;
     if (config.syncthing?.enabled === false) {
-      return res.json({ ok: true, local, syncthing: { online: false, disabled: true, error: 'P2P desativado nas configurações.' } });
+      syncthing = { online: false, disabled: true, error: 'P2P desativado nas configurações.' };
+    } else {
+      try {
+        syncthing = await new SyncthingClient(config).syncFolder();
+      } catch (error) {
+        syncthing = { online: false, error: error.message };
+      }
     }
-    const result = await new SyncthingClient(config).syncFolder();
-    res.json({ ok: true, local, syncthing: result });
+    if (local.archived.length) debounceCloudSync();
+    const payload = { ok: true, local, syncthing };
+    res.json(payload);
   } catch (error) {
-    res.json({ ok: true, local, syncthing: { online: false, error: error.message } });
+    res.status(409).json({ ok: false, error: error.message });
   }
 });
 
-router.post('/local-sync', (_req, res) => {
-  const result = archiveAllEnabled();
+router.post('/local-sync', async (_req, res) => {
+  const result = await withDataLock('api:local-sync', () => archiveAllEnabled());
   if (!result.archived.length) {
     return res.status(409).json({
       error: result.skipped.length
@@ -137,7 +129,7 @@ router.post('/local-sync', (_req, res) => {
   res.json({ ok: true, local: result });
 });
 
-router.post('/preferences', (req, res) => {
+router.post('/preferences', async (req, res) => {
   try {
     const config = readConfig();
     config.savesync = {
@@ -145,7 +137,7 @@ router.post('/preferences', (req, res) => {
       version_limit: normalizeVersionLimit(req.body?.version_limit)
     };
     writeConfig(config);
-    const removed = rotateAllVersions(config.savesync.version_limit);
+    const removed = await withDataLock('preferences:rotate', () => rotateAllVersions(config.savesync.version_limit));
     res.json({
       ok: true,
       preferences: {

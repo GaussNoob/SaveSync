@@ -1,0 +1,13 @@
+.git
+.github
+.env
+config.yaml
+node_modules
+dashboard/dist
+android
+data
+saves
+conflicts
+*.sqlite*
+*.log
+rclone-current-*.zip

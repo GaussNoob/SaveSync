@@ -1,10 +1,15 @@
 <script setup>
+import { FolderOpen, FolderUp } from '@lucide/vue';
+
 const emit = defineEmits(['path']);
+const desktopFolderAccess = Boolean(window.saveSync?.selectFolder && window.saveSync?.getPathForFile);
 
 function onDrop(event) {
   event.preventDefault();
   const file = event.dataTransfer?.files?.[0];
-  const path = file?.path || file?.webkitRelativePath || '';
+  const path = file && window.saveSync?.getPathForFile
+    ? window.saveSync.getPathForFile(file)
+    : file?.path || '';
   if (path) emit('path', path);
 }
 
@@ -17,8 +22,16 @@ async function selectFolder() {
 
 <template>
   <div class="drop-zone" @dragover.prevent @drop="onDrop">
-    <strong>Arraste uma pasta de saves aqui</strong>
-    <span>Ou use o seletor nativo no app Electron.</span>
-    <button class="outline" type="button" @click="selectFolder">Selecionar pasta</button>
+    <span class="drop-zone-icon"><FolderUp :size="18" :stroke-width="1.6" /></span>
+    <strong>{{ desktopFolderAccess ? 'Solte uma pasta de saves' : 'Seleção disponível no aplicativo desktop' }}</strong>
+    <span>
+      {{ desktopFolderAccess
+        ? 'O caminho será analisado localmente para identificar o jogo e as extensões.'
+        : 'No navegador, informe o caminho que existe no servidor pela aba Manual.' }}
+    </span>
+    <button v-if="desktopFolderAccess" class="button button-secondary" type="button" @click="selectFolder">
+      <FolderOpen :size="14" />
+      Selecionar pasta
+    </button>
   </div>
 </template>

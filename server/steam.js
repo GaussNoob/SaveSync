@@ -8,17 +8,18 @@ export function parseVdf(content) {
   const regex = /"((?:\\.|[^"\\])*)"|([{}])/g;
   let match;
   while ((match = regex.exec(content))) tokens.push(match[1] ?? match[2]);
+  let cursor = 0;
 
   function parseObject() {
     const object = {};
-    while (tokens.length) {
-      const key = tokens.shift();
+    while (cursor < tokens.length) {
+      const key = tokens[cursor++];
       if (key === '}') break;
-      if (tokens[0] === '{') {
-        tokens.shift();
+      if (tokens[cursor] === '{') {
+        cursor += 1;
         object[key] = parseObject();
       } else {
-        object[key] = tokens.shift();
+        object[key] = tokens[cursor++];
       }
     }
     return object;
@@ -134,32 +135,88 @@ export function getSteamCloudStatus(appid, config = {}) {
   return enabled ? 'enabled' : found ? 'available' : 'unknown';
 }
 
-export function getProtonPrefixPath(appid) {
-  const candidates = getDefaultSteamPaths().map(root =>
-    path.join(root, 'steamapps', 'compatdata', String(appid), 'pfx')
-  );
-  return candidates.find(pathExists) || candidates[0];
-}
-
 export function disableSteamCloudForApp(appid, config = {}) {
+  const safeAppId = String(appid || '');
+  if (!/^\d{1,10}$/.test(safeAppId)) throw new Error('Steam appid inválido.');
   const changed = [];
   for (const user of listSteamUsers(config)) {
     const file = path.join(user.userdata_path, 'config', 'localconfig.vdf');
     if (!pathExists(file)) continue;
     const content = fs.readFileSync(file, 'utf8');
-    const appBlock = new RegExp(`("${appid}"\\s*\\{[\\s\\S]*?)(\\n\\s*\\})`, 'm');
-    const updated = content.replace(appBlock, (block) => {
-      if (/"Cloud"\s+"0"/.test(block)) return block;
-      if (/"Cloud"\s+"1"/.test(block)) return block.replace(/"Cloud"\s+"1"/, '"Cloud"\t\t"0"');
-      return block.replace(/\n\s*\}$/, '\n\t\t\t\t\t"Cloud"\t\t"0"\n\t\t\t\t}');
-    });
+    const appsRange = findNestedVdfObjectRange(content, ['UserLocalConfigStore', 'Software', 'Valve', 'Steam', 'Apps']);
+    if (!appsRange) continue;
+    const appsContent = content.slice(appsRange.start, appsRange.end);
+    const relativeAppRange = findVdfObjectRange(appsContent, safeAppId);
+    if (!relativeAppRange) continue;
+    const appStart = appsRange.start + relativeAppRange.start;
+    const appEnd = appsRange.start + relativeAppRange.end;
+    const appBlock = content.slice(appStart, appEnd);
+    if (!/"Cloud"\s+"1"/.test(appBlock)) continue;
+    const updatedBlock = appBlock.replace(/"Cloud"\s+"1"/, '"Cloud"\t\t"0"');
+    const updated = `${content.slice(0, appStart)}${updatedBlock}${content.slice(appEnd)}`;
     if (updated !== content) {
-      fs.copyFileSync(file, `${file}.savesync.bak`);
-      fs.writeFileSync(file, updated);
+      atomicReplaceTextFile(file, updated);
       changed.push(file);
     }
   }
   return changed;
+}
+
+function findNestedVdfObjectRange(content, keys) {
+  let start = 0;
+  let end = content.length;
+  for (const key of keys) {
+    const relative = findVdfObjectRange(content.slice(start, end), key);
+    if (!relative) return null;
+    const previousStart = start;
+    start = previousStart + relative.start;
+    end = previousStart + relative.end;
+  }
+  return { start, end };
+}
+
+function findVdfObjectRange(content, key) {
+  const escaped = String(key).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`"${escaped}"\\s*\\{`).exec(content);
+  if (!match) return null;
+  const openingBrace = content.indexOf('{', match.index);
+  let depth = 0;
+  let quoted = false;
+  let escapedCharacter = false;
+  for (let index = openingBrace; index < content.length; index += 1) {
+    const character = content[index];
+    if (quoted) {
+      if (escapedCharacter) escapedCharacter = false;
+      else if (character === '\\') escapedCharacter = true;
+      else if (character === '"') quoted = false;
+      continue;
+    }
+    if (character === '"') quoted = true;
+    else if (character === '{') depth += 1;
+    else if (character === '}' && --depth === 0) return { start: match.index, end: index + 1 };
+  }
+  return null;
+}
+
+function atomicReplaceTextFile(file, content) {
+  const suffix = `${Date.now()}-${process.pid}`;
+  const temporary = `${file}.savesync-${suffix}.tmp`;
+  const backup = `${file}.savesync-${suffix}.bak`;
+  const mode = fs.statSync(file).mode;
+  fs.writeFileSync(temporary, content, { encoding: 'utf8', mode });
+  try {
+    fs.renameSync(file, backup);
+  } catch (error) {
+    try { fs.rmSync(temporary, { force: true }); } catch { /* best effort */ }
+    throw error;
+  }
+  try {
+    fs.renameSync(temporary, file);
+  } catch (error) {
+    fs.renameSync(backup, file);
+    try { fs.rmSync(temporary, { force: true }); } catch { /* best effort */ }
+    throw error;
+  }
 }
 
 function safeReaddir(dir) {

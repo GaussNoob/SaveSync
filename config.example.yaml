@@ -1,0 +1,29 @@
+server:
+  host: 127.0.0.1
+  allowed_origins:
+    - http://localhost:5173
+
+savesync:
+  version_limit: 10
+  sync_on_change: true
+  notify_desktop: true
+  scan_on_startup: true
+
+custom_games: []
+emulators: []
+
+syncthing:
+  enabled: false
+  api_url: http://localhost:8384
+  api_key: ""
+  folder_id: savesync-folder
+  device_ids: []
+
+cloud:
+  enabled: false
+  provider: google_drive
+  remote_name: savesync-gdrive
+  remote_path: SaveSync/
+  sync_interval_minutes: 5
+  on_conflict: keep_both
+  max_delete_percent: 10

@@ -1,33 +1,40 @@
-version: '3.8'
-
 services:
   syncthing:
-    image: syncthing/syncthing:latest
+    image: syncthing/syncthing:2.1.2
+    hostname: syncthing
+    environment:
+      PUID: 1000
+      PGID: 1000
+      UMASK: "002"
     ports:
-      - "8384:8384"
+      - "127.0.0.1:8384:8384"
       - "22000:22000"
       - "21027:21027/udp"
     volumes:
-      - ./saves:/var/syncthing/saves
+      - savesync-archives:/app/savesync-data/games
       - syncthing-config:/var/syncthing/config
     restart: unless-stopped
 
   savesync:
     build: .
+    init: true
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      - SAVESYNC_DATA_DIR=/app/savesync-data
+      SAVESYNC_HOST: 0.0.0.0
+      SAVESYNC_API_TOKEN: ${SAVESYNC_API_TOKEN:?set SAVESYNC_API_TOKEN with at least 32 characters}
+      SYNCTHING_API_URL: http://syncthing:8384
+      SYNCTHING_API_KEY: ${SYNCTHING_API_KEY:-}
+      SAVESYNC_SYNCTHING_HOSTS: syncthing
     volumes:
-      - ./config.yaml:/app/config.yaml
-      - ./saves:/app/saves
-      - ./data:/app/savesync-data
-      - ./rclone:/root/.config/rclone
-      - /home:/home:ro
-      - /mnt/c/Users:/mnt/c/Users:ro
+      - savesync-state:/app/savesync-data
+      - savesync-archives:/app/savesync-data/games
+      - ./saves:/host-saves
     depends_on:
       - syncthing
     restart: unless-stopped
 
 volumes:
+  savesync-state:
+  savesync-archives:
   syncthing-config:

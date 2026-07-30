@@ -1,8 +1,7 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expandPath, getPlatformKey, normalizeGameId, pathExists, readConfig } from './utils.js';
+import { expandPath, getPlatformKey, normalizeGameId, pathExists, readConfig, safeStat } from './utils.js';
 import { getSteamCloudStatus, listInstalledSteamApps } from './steam.js';
 import { listGames } from './db.js';
 
@@ -111,8 +110,7 @@ export function scanSystem(config = readConfig()) {
         cloud_save: Boolean(game.cloud_save),
         cloud_status: game.steam_appid ? getSteamCloudStatus(game.steam_appid, config) : 'unknown',
         enabled: false,
-        detected,
-        cloud_save_warning: game.cloud_save_warning || null
+        detected
       });
     }
   }
@@ -173,7 +171,7 @@ export function searchKnownGames(query = '') {
     .map(publicKnownGame);
 }
 
-export function detectKnownGame(gameId, config = readConfig()) {
+export function detectKnownGame(gameId) {
   const game = knownGames.find(item => item.id === gameId);
   if (!game) return null;
   const expectedPath = expandPath(getSavePathForCurrentPlatform(game));
@@ -204,20 +202,14 @@ export function scanLaunchers(config = readConfig()) {
   }));
 }
 
-export function filterUnavailableGames(games, config = readConfig()) {
-  const installedSteam = new Set(listInstalledSteamApps(config).map(app => String(app.appid)));
-  return games.filter(game => {
-    if (!game.steam_appid) return true;
-    return installedSteam.has(String(game.steam_appid));
-  });
-}
-
 export function identifySavePath(inputPath) {
   const target = expandPath(inputPath);
+  if (!target) return { suggested_game: null, extensions_found: [] };
   const extensions = pathExists(target) ? findExtensions(target) : [];
   const base = normalizeSearch(path.basename(target || ''));
   const full = normalizeSearch(target);
   const compactFull = compactSearch(target);
+  const compactBase = compactSearch(base);
   const scored = knownGames.map(game => {
     const names = normalizeSearch([game.name, game.id, ...(game.search_aliases || [])].join(' '));
     const compactNames = compactSearch([game.name, game.id, ...(game.search_aliases || [])].join(' '));
@@ -225,7 +217,7 @@ export function identifySavePath(inputPath) {
     let score = extScore;
     if (names.includes(base) || base.includes(normalizeSearch(game.name))) score += 10;
     if (full.includes(normalizeSearch(game.id)) || full.includes(normalizeSearch(game.name))) score += 8;
-    if (compactFull.includes(compactNames) || compactNames.includes(compactSearch(base))) score += 8;
+    if (compactFull.includes(compactNames) || (compactBase.length >= 3 && compactNames.includes(compactBase))) score += 8;
     return { game, score };
   }).sort((a, b) => b.score - a.score);
   const suggested = scored[0]?.score > 1 ? scored[0].game : null;
@@ -266,30 +258,6 @@ export function toGameRecordFromKnown(gameId, sourcePath, enabled = true) {
     cloud_status: game.steam_appid ? getSteamCloudStatus(game.steam_appid, readConfig()) : 'unknown',
     enabled
   };
-}
-
-export function scanBroadSaveLocations() {
-  const home = os.homedir();
-  const candidates = process.platform === 'win32'
-    ? [
-        process.env.APPDATA,
-        process.env.LOCALAPPDATA,
-        path.join(process.env.USERPROFILE || home, 'Documents', 'My Games'),
-        path.join(process.env.USERPROFILE || home, 'Saved Games')
-      ]
-    : [
-        path.join(home, '.config'),
-        path.join(home, '.local', 'share'),
-        path.join(home, 'Documents', 'My Games'),
-        path.join(home, 'Saved Games')
-      ];
-  return candidates.filter(Boolean).map(expandPath).filter(pathExists);
-}
-
-export function importDetectedToDb(dbApi, config = readConfig()) {
-  const detected = scanSystem(config);
-  for (const game of detected) dbApi.upsertGame(game);
-  return detected;
 }
 
 function dedupeById(items) {
@@ -360,10 +328,14 @@ function findExtensions(root) {
   return [...new Set(listFiles(root, 3).map(file => path.extname(file).toLowerCase()).filter(Boolean))].sort();
 }
 
-function listFiles(root, maxDepth = 2, depth = 0) {
+function listFiles(root, maxDepth = 2, depth = 0, state = { remaining: 5_000 }) {
+  if (state.remaining <= 0) return [];
   const stat = safeStat(root);
   if (!stat) return [];
-  if (stat.isFile()) return [root];
+  if (stat.isFile()) {
+    state.remaining -= 1;
+    return [root];
+  }
   if (!stat.isDirectory() || depth > maxDepth) return [];
   let entries = [];
   try {
@@ -372,26 +344,15 @@ function listFiles(root, maxDepth = 2, depth = 0) {
     console.warn(`Cannot read ${root}: ${error.message}`);
     return [];
   }
-  return entries.flatMap(entry => {
+  const files = [];
+  for (const entry of entries) {
+    if (state.remaining <= 0) break;
     const full = path.join(root, entry.name);
-    if (entry.isDirectory()) return listFiles(full, maxDepth, depth + 1);
-    return entry.isFile() ? [full] : [];
-  });
-}
-
-function safeStat(target) {
-  try {
-    return fs.statSync(target);
-  } catch {
-    return null;
+    if (entry.isDirectory()) files.push(...listFiles(full, maxDepth, depth + 1, state));
+    else if (entry.isFile()) {
+      state.remaining -= 1;
+      files.push(full);
+    }
   }
-}
-
-export function canReadDirectory(dir) {
-  try {
-    fs.accessSync(dir, fs.constants.R_OK);
-    return true;
-  } catch {
-    return false;
-  }
+  return files;
 }

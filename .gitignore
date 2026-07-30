@@ -1,5 +1,6 @@
 node_modules/
 dashboard/dist/
+release/
 data/
 saves/
 games/
@@ -9,3 +10,7 @@ conflicts/
 *.sqlite-wal
 *.log
 .DS_Store
+config.yaml
+.env
+.claude/
+rclone-current-*.zip

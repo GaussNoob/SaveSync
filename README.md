@@ -1,156 +1,174 @@
 # SaveSync
 
-SaveSync e uma ferramenta self-hosted poderosa projetada para sincronizar automaticamente saves de jogos de PC e emuladores. O projeto resolve o problema da fragmentacao de saves locais, garantindo uma integracao fluida tanto via P2P (ponto-a-ponto) quanto em provedores de nuvem (como o Google Drive). 
+SaveSync é uma ferramenta self-hosted para versionar e sincronizar saves de jogos. O backend usa Node.js, Express, SQLite e Chokidar; o painel usa Vue 3; rclone faz o `bisync` com Google Drive e Syncthing compartilha o arquivo de versões via P2P.
 
-O foco do SaveSync e atuar de forma invisivel no plano de fundo. O PC principal atua como host, mantendo os arquivos atualizados em todas as suas maquinas e nuvem, protegendo contra perda de progresso com um sistema proprio de versionamento local e resolucao de conflitos.
+## Como os dados são protegidos
 
----
+- Cada mudança gera um snapshot completo da raiz configurada para o jogo. O caminho que disparou o watcher é apenas metadado.
+- O snapshot é copiado para staging e só aparece no histórico depois de um `rename` atômico.
+- Restore, watcher e rclone passam por uma fila única de mutações.
+- Antes de restaurar, o estado atual vira um snapshot `pre_restore`. A troca usa staging, backup e rollback no mesmo volume.
+- O cliente nunca escolhe um caminho de arquivo para restore: a API recebe o `event_id` e resolve o caminho gravado no SQLite.
+- Snapshots recebidos por rclone ou Syncthing são validados e indexados no Histórico. Eles não sobrescrevem automaticamente o save ativo; a aplicação é manual.
+- Conflitos ficam em quarentena. Escolher a versão remota preserva uma cópia da versão local anterior.
 
-## 1. Arquitetura do Sistema
+Os snapshots ficam em `SAVESYNC_DATA_DIR/games/<game-id>/<snapshot-id>/`, com `manifest.json` e `payload`.
 
-O SaveSync opera dividindo a arquitetura em tres camadas centrais:
+As fronteiras entre módulos, invariantes, decisões de concorrência e trade-offs estão documentados em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-- **Backend / Daemon (Node.js + Express):**
-  - O motor principal responsavel por orquestrar todo o fluxo. 
-  - Utiliza `chokidar` para observar alteracoes em diretorios de saves em tempo real.
-  - Mantem um banco de dados local (`better-sqlite3`) para registrar historicos, eventos de sincronizacao em nuvem e gerenciar a fila de dados.
-- **Camada de Sincronizacao (P2P + Nuvem):**
-  - **Syncthing:** Utilizado como motor para sincronizacao local ponto-a-ponto entre diferentes PCs ou dispositivos moveis de forma direta e descentralizada. O backend consome a API REST do Syncthing para coletar status e estados de erro.
-  - **Rclone:** Utilizado como motor de integracao com a nuvem. O SaveSync utiliza o recurso `rclone bisync` para sincronizar os dados em mao-dupla com provedores remotos. A autorizacao com plataformas como Google Drive e gerida inteiramente de forma transparente pelo proprio servidor do SaveSync.
-- **Frontend (Vue 3 + Vite):**
-  - Um painel de controle (Dashboard) hospedado internamente. Ele e construido com Vue.js 3 e se comunica via API REST e WebSockets com o backend, oferecendo uma visao moderna para gestao de conflitos, historico e configuracoes de nuvem.
+## Requisitos
 
----
+- Node.js 22.12 ou mais recente.
+- rclone 1.71.0 ou mais recente para Google Drive. A imagem Docker inclui rclone 1.74.3.
+- Syncthing opcional.
+- JDK 21 e Android SDK apenas para o APK Capacitor.
 
-## 2. O Que o Sistema E Capaz de Fazer
-
-O SaveSync e projetado para oferecer tranquilidade e automacao. Suas principais funcionalidades sao:
-
-* **Monitoramento Ativo (Watchers):** Ao detectar que um arquivo de save mudou, ele faz backup local automatico, registrando aquele timestamp.
-* **Backup e Versionamento Seguro:** O sistema mantem um limite personalizavel de "versoes" antigas de um save (por padrao 10). Assim, se o seu jogo corromper o arquivo mais recente, voce pode restaurar uma versao antiga a partir do dashboard.
-* **Desativacao do Steam Cloud:** Se o jogo estiver sob tutela do Steam Cloud, existe grande risco de conflitos. O SaveSync sabe ler arquivos `.vdf` do Steam e oferece a possibilidade de desabilitar a nuvem do Steam daquele jogo especifico para focar 100% no motor do SaveSync.
-* **Resolucao Inteligente de Conflitos:** Ao encontrar duas modificacoes simultaneas no mesmo save (ex: jogou no PC e no Notebook offline, e depois conectou ambos), o SaveSync coloca o arquivo conflitante em quarentena. O Dashboard permite que o usuario escolha ativamente qual versao deseja manter a partir de metadados como tamanho e data de modificacao.
-* **Automacao OAuth com Google Drive:** Integracao nativa. O usuario pode abrir o painel em `Configuracoes -> Nuvem`, solicitar para conectar o Google Drive, e o servidor abrira automaticamente o consentimento no navegador. Sem necessidade de gerenciar chaves complexas de API.
-* **Varredura e Deteccao de Jogos:** Ao ser iniciado, o sistema usa uma base de dados local (`known-games.json`) contendo dezenas de jogos populares e estruturas tipicas para encontrar os saves no computador automaticamente.
-
----
-
-## 3. Instalacao e Uso Basico
-
-### Requisitos
-- Node.js 20+
-- Rclone (detectado automaticamente se instalado globalmente ou em ~/.local/bin)
-- Syncthing (opcional, para P2P)
-- Android SDK + JDK 21+ para gerar APK Android
-
-### Iniciar o Projeto em Modo de Desenvolvimento
-O projeto contem scripts utilitarios que iniciam de forma concorrente o backend e o front-end:
+## Desenvolvimento local
 
 ```bash
-npm install
+git clone https://github.com/GaussNoob/SaveSync.git
+cd SaveSync
+cp config.example.yaml config.yaml
+npm ci
 npm run dev
 ```
 
-* Backend / API: estara operando em `http://localhost:3000`
-* Dashboard / UI: estara disponivel em `http://localhost:5173`
+- Dashboard de desenvolvimento: `http://localhost:5173`
+- API: `http://127.0.0.1:3000/api`
+- Dashboard compilado: `npm run build && npm start`
+- Testes: `npm test`
+- Verificação completa: `npm run check`
 
-### Build para Producao
-Para gerar os arquivos minificados do dashboard, utilize:
+`config.yaml`, `.env`, bancos SQLite e o arquivo do rclone são locais e não são versionados.
 
-```bash
-npm run build
-```
-Isso exportara os arquivos estaticos do Vue, que passarao a ser servidos diretamente pelo backend Node.js (na porta 3000).
+## Segurança da API
 
-### Build Android
-O app Android usa Capacitor e empacota o dashboard Vue dentro de uma WebView. O backend Node.js continua rodando no computador host ou em um servidor acessivel pela rede.
+Por padrão o backend escuta somente em `127.0.0.1` e não exige token. Para expor o serviço na LAN ou em um container, configure um token aleatório com pelo menos 32 caracteres:
 
 ```bash
-npm run android:sync
-npm run android:build
+SAVESYNC_HOST=0.0.0.0
+SAVESYNC_API_TOKEN=cole-aqui-um-token-aleatorio-longo
 ```
 
-O APK debug sera gerado em `android/app/build/outputs/apk/debug/app-debug.apk`.
-
-Para testar direto em um emulador conectado:
+É possível gerar um token com Node:
 
 ```bash
-npm run start
-npm run android:run
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-Em emuladores Android, o dashboard usa `http://10.0.2.2:3000/api` por padrao para alcançar o backend rodando no computador. Em Genymotion, dispositivos fisicos ou backends remotos, ajuste o endpoint em `Configuracoes -> Android e rede`.
+O painel salva o token em `Configurações > Geral > Token da API` e o envia como Bearer token. Origens adicionais devem entrar em `server.allowed_origins` no `config.yaml`:
 
-Se o Gradle reclamar de `invalid source release: 21`, instale um JDK 21+ e rode novamente com `JAVA_HOME` apontando para ele.
+```yaml
+server:
+  host: 0.0.0.0
+  allowed_origins:
+    - http://192.168.1.50:5173
+```
 
----
+O valor de `SAVESYNC_HOST` prevalece sobre o YAML. Não coloque `SAVESYNC_API_TOKEN` no repositório.
 
-## 4. Onde Editar e Configurar o Sistema
+## Configuração
 
-O principal ponto de interacao do usuario avancado com o SaveSync e o arquivo `config.yaml`, localizado na pasta raiz do projeto. 
+Comece por [config.example.yaml](config.example.yaml). As opções principais são:
 
-As definicoes neste arquivo sobrepoem o comportamento padrao do backend. Todas as alteracoes salvas nele sao refletidas automaticamente sem precisar reiniciar o app.
+```yaml
+savesync:
+  version_limit: 10
+  sync_on_change: true
+  notify_desktop: true
+  scan_on_startup: true
 
-### Estrutura do `config.yaml`
+cloud:
+  enabled: false
+  remote_name: savesync-gdrive
+  remote_path: SaveSync/
+  sync_interval_minutes: 5
+  on_conflict: keep_both
+  max_delete_percent: 10
 
-#### `savesync` (Configuracoes globais)
-- `version_limit`: Define quantas versoes de historico de save de um mesmo jogo ficarao armazenadas (padrao: 10).
-- `sync_on_change`: Se habilitado, inicia processos de sincronizacao (nuvem/p2p) logo apos perceber modificacoes (com um debouncer de seguranca).
-- `scan_on_startup`: Define se o sistema deve procurar ativamente pelos jogos detectados ao ser inicializado.
+syncthing:
+  enabled: false
+  api_url: http://localhost:8384
+  folder_id: savesync-folder
+  device_ids: []
+```
 
-#### `cloud` (Sincronizacao em Nuvem via Rclone)
-A UI edita esse bloco diretamente atraves da API, mas caso prefira gerenciar no arquivo:
-- `enabled`: Define `true` ou `false` se a sincronizacao de nuvem esta ativa.
-- `provider`: Provedor configurado (ex: `google_drive`).
-- `remote_name`: Nome do "Remote" salvo internamente na configuracao do Rclone. Recomendamos nao mudar a menos que gerencie o Rclone por fora.
-- `sync_interval_minutes`: Frequencia com a qual o daemon verifica silenciosamente a nuvem buscando novos saves de fora (padrao: 5).
+O SaveSync só aceita a API do Syncthing em hosts locais conhecidos. Para um host LAN explícito, use `SAVESYNC_SYNCTHING_HOSTS=host1,192.168.1.20`. A pasta compartilhada é sempre o arquivo gerenciado em `SAVESYNC_DATA_DIR/games`; um caminho arbitrário vindo da API não é aceito.
 
-#### `syncthing` (Sincronizacao P2P)
-- `api_url`: Endereco onde o motor daemon do syncthing esta escutando.
-- `api_key`: Chave obrigatoria gerada na configuracao original do Syncthing para que o SaveSync consiga interagir.
+Novas pastas Syncthing não são compartilhadas automaticamente com todos os dispositivos. Adicione os IDs permitidos em `syncthing.device_ids` ou faça o compartilhamento na UI do Syncthing.
 
-#### `custom_games` (Jogos Manuais)
-Array de definicoes de jogos inseridos fora da varredura automatica. Exemplo:
+Use `SYNCTHING_API_KEY` para manter a chave fora do YAML. O token OAuth do Google fica em `SAVESYNC_DATA_DIR/rclone/rclone.conf`, com permissão `0600` em Unix. O cache/baseline do bisync fica em `SAVESYNC_DATA_DIR/rclone-cache`.
+
+### Jogos e emuladores personalizados
+
 ```yaml
 custom_games:
-  - name: Meu Jogo Desconhecido
-    saves_path: C:/Caminho/Absoluto/Para/O/Save
-    extensions:
-      - .sav
-```
+  - name: Meu Jogo
+    saves_path: C:/Jogos/MeuJogo/saves
+    extensions: [.sav]
 
-#### `emulators` (Varredura de Emuladores)
-Array semelhante a `custom_games`, usado especificamente para organizar emuladores. O SaveSync ja inclui deteccao padrao para RetroArch, Dolphin, Yuzu, Eden, Ryujinx, Cemu, PCSX2, RPCS3, MAME, DeSmuME, melonDS, PPSSPP, SNES9x e VisualBoyAdvance.
-
-Cada `saves_path` ou `states_path` pode ser uma string simples, uma lista de caminhos ou um objeto por plataforma (`windows`, `linux`, `mac`). Quando uma lista e usada, o primeiro caminho existente no computador e usado:
-
-```yaml
 emulators:
   - name: Ryujinx
     saves_path:
       windows: "%APPDATA%\\Ryujinx\\bis\\user\\save"
-      linux:
-        - ~/.config/Ryujinx/bis/user/save
-        - ~/.var/app/org.ryujinx.Ryujinx/config/Ryujinx/bis/user/save
+      linux: ~/.config/Ryujinx/bis/user/save
       mac: ~/Library/Application Support/Ryujinx/bis/user/save
-    extensions: []
     save_type: directory
 ```
 
----
+A fonte precisa existir, não pode ser a raiz do disco e não pode conter nem ficar dentro de `SAVESYNC_DATA_DIR`.
 
-## 5. Como Adicionar Regras ou Deteccoes Customizadas
+## rclone bisync
 
-### Adicionar Suporte Automativo a Novos Jogos
-Se desejar que o SaveSync passe a achar automaticamente um determinado jogo em PCs diferentes, voce devera editar o arquivo `/server/known-games.json`. 
+O SaveSync não usa `--force` e nunca aplica `--resync` automaticamente. Se o estado base não existir, o painel mostrará uma ação separada para reconstruí-lo, com confirmação explícita. Confira antes as duas pontas: `--resync` define um novo baseline e uma escolha errada pode propagar dados indesejados.
 
-Esse arquivo contem um dicionario JSON, onde cada entrada suporta os metodos especificos da API da Steam, GOG, Epic Games ou pasta Documentos tradicional para mapear caminhos.
+O rclone roda sem shell, com argumentos separados, timeout, saída limitada, `--max-delete`, `--check-access` e versão mínima verificada. O marcador de acesso remoto só é criado durante um baseline explicitamente confirmado.
 
-### Como Modificar o Banco de Dados
-Todo o esquema SQLite e inicializado pelo arquivo `server/db.js`. O arquivo `savesync.sqlite` (ou localizado dentro da pasta oculta apontada pela variavel de ambiente `SAVESYNC_DATA_DIR`) armazena os jogos mapeados. Para zerar o banco ou ajustar tabelas, gerencie diretamente esses arquivos.
+## Docker Compose
 
----
+Crie um `.env` local:
 
-## 6. Logs e Manutencao
-- O sistema intercepta o stdout de processos externos (como as rotinas `bisync` do rclone) e as re-transmite via WebSocket, permitindo que a visualizacao em tempo real seja feita por dentro do painel `Configuracoes -> Nuvem` do dashboard.
-- Arquivos problematicos sem permissao de leitura (Comum no Windows Store Apps) apenas reportam um "warn" ou pulam a execucao, para garantir que o fluxo principal nunca parete. Acesso privilegiado ao processo do Node.js permite a contornar problemas de permissoes restritas nos saves.
+```dotenv
+SAVESYNC_API_TOKEN=um-token-aleatorio-com-pelo-menos-32-caracteres
+SYNCTHING_API_KEY=
+```
+
+Depois:
+
+```bash
+docker compose up --build
+```
+
+O compose publica Dashboard e UI do Syncthing apenas em loopback. A pasta `./saves` aparece como `/host-saves` no container; cadastre fontes usando esse caminho. Estado, snapshots e configuração Syncthing usam volumes separados e persistentes.
+
+Para acessar de outro dispositivo, altere conscientemente o mapeamento `127.0.0.1:3000:3000` para `3000:3000`, mantenha o token obrigatório e configure a origem do painel. O fluxo OAuth que abre o navegador é mais simples fora do Docker; em ambiente headless, configure o remote `savesync-gdrive` com `docker compose exec savesync rclone config`.
+
+## Android e Electron
+
+```bash
+npm run electron:start
+npm run dist:win
+npm run android:sync
+npm run android:build
+```
+
+O APK contém somente o dashboard; o backend continua em um computador ou servidor. No emulador Android, o endpoint padrão é `http://10.0.2.2:3000/api`. Para aparelho físico, informe endpoint/token em Configurações. Fora de uma rede local confiável, coloque a API atrás de HTTPS, VPN ou túnel seguro: um Bearer token enviado por HTTP não é confidencial.
+
+`npm run dist:win` gera um executável portátil x64 em `release/`. O pacote Electron inicia o backend com o runtime Node integrado ao próprio aplicativo; uma instalação externa do Node não é necessária. O binário não é assinado digitalmente, portanto o Windows SmartScreen pode solicitar confirmação na primeira execução.
+
+## Banco e migrações
+
+O SQLite usa WAL, foreign keys, `busy_timeout` e migrações incrementais via `PRAGMA user_version`. Não apague o banco para atualizar o schema. Eventos de save e atualização de `last_save_at` são gravados na mesma transação.
+
+## CI
+
+O workflow executa em Linux e Windows:
+
+- `npm ci`;
+- testes Vitest;
+- build Vite;
+- `npm audit`;
+- validação da imagem Docker;
+- build do APK Android debug com JDK 21.
+
+Dependabot acompanha npm, Docker e GitHub Actions.

@@ -5,8 +5,5 @@
   "server": {
     "androidScheme": "http",
     "cleartext": true
-  },
-  "android": {
-    "allowMixedContent": true
   }
 }

@@ -1,0 +1,26 @@
+appId: com.savesync.desktop
+productName: SaveSync
+asar: true
+npmRebuild: false
+asarUnpack:
+  - node_modules/better-sqlite3/**
+  - node_modules/node-notifier/**
+compression: normal
+directories:
+  output: release
+files:
+  - dashboard/dist/**
+  - electron/**
+  - server/**
+  - package.json
+  - "!**/*.map"
+electronLanguages:
+  - pt-BR
+  - en-US
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+portable:
+  artifactName: SaveSync-${version}-windows-${arch}.${ext}
