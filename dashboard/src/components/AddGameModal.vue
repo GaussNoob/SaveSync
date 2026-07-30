@@ -194,6 +194,7 @@ async function runScan() {
   error.value = '';
   try {
     scanRows.value = await api('/games/scan');
+    selectedScanIds.value = new Set();
   } catch (requestError) {
     error.value = requestError.message;
   } finally {
@@ -202,11 +203,29 @@ async function runScan() {
 }
 
 function toggleScan(row) {
-  if (row.already_monitored) return;
+  if (row.already_monitored || !row.can_import) return;
   const next = new Set(selectedScanIds.value);
   if (next.has(row.id)) next.delete(row.id);
   else next.add(row.id);
   selectedScanIds.value = next;
+}
+
+function handleScanRowClick(row, event) {
+  if (event.target.closest('button, input')) return;
+  toggleScan(row);
+}
+
+function configureScannedGame(row) {
+  error.value = '';
+  manual.value = {
+    name: row.name,
+    platform: row.platform === 'steam' ? 'Steam' : row.platform || 'Outro',
+    path: '',
+    customExtension: ''
+  };
+  manualValidation.value = null;
+  manualExtensions.value = new Set(row.extensions || []);
+  active.value = 'manual';
 }
 
 async function addSelectedScan() {
@@ -440,26 +459,43 @@ onUnmounted(() => {
               </div>
             </div>
             <div v-else-if="scanRows.length" class="scan-results">
-              <label
+              <article
                 v-for="row in scanRows"
                 :key="row.id"
-                :class="{ disabled: row.already_monitored }"
+                class="scan-row"
+                :class="{
+                  disabled: row.already_monitored,
+                  'requires-path': row.requires_path && !row.already_monitored
+                }"
+                @click="handleScanRowClick(row, $event)"
               >
                 <input
                   type="checkbox"
-                  :disabled="row.already_monitored"
+                  :disabled="row.already_monitored || !row.can_import"
                   :checked="selectedScanIds.has(row.id)"
                   @change="toggleScan(row)"
                 />
                 <span>
                   <strong>{{ row.name }}</strong>
-                  <small>{{ row.platform }} · {{ row.extensions?.join(', ') || 'diretório' }}</small>
-                  <code>{{ row.save_path }}</code>
+                  <small>
+                    {{ row.platform }} ·
+                    {{ row.requires_path ? 'instalado, save não identificado' : row.extensions?.join(', ') || 'diretório' }}
+                  </small>
+                  <code>{{ row.save_path || row.install_dir || 'Informe o caminho do save' }}</code>
                 </span>
-                <StatusBadge :type="row.already_monitored ? 'neutral' : row.found_in_system ? 'success' : 'warning'">
-                  {{ row.already_monitored ? 'Adicionado' : row.found_in_system ? 'Encontrado' : 'Ausente' }}
-                </StatusBadge>
-              </label>
+                <div class="scan-row-status">
+                  <button
+                    v-if="row.requires_path && !row.already_monitored"
+                    class="button button-secondary"
+                    @click.stop="configureScannedGame(row)"
+                  >
+                    Informar save
+                  </button>
+                  <StatusBadge :type="row.already_monitored ? 'neutral' : row.can_import ? 'success' : 'warning'">
+                    {{ row.already_monitored ? 'Adicionado' : row.can_import ? 'Save encontrado' : 'Instalado' }}
+                  </StatusBadge>
+                </div>
+              </article>
             </div>
             <EmptyState
               v-else

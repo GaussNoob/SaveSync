@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expandPath, getPlatformKey, normalizeGameId, pathExists, readConfig, safeStat } from './utils.js';
-import { getSteamCloudStatus, listInstalledSteamApps } from './steam.js';
+import { findSteamCloudSavePath, getSteamCloudStatus, listInstalledSteamApps } from './steam.js';
 import { listGames } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -88,16 +88,16 @@ const emulatorDefaults = [
   { name: 'VisualBoyAdvance', platform: 'emulator', saves_path: '~/.visualboyadvance', extensions: ['.sav', '.sgm'] }
 ];
 
-export function scanSystem(config = readConfig()) {
+export function scanSystem(config = readConfig(), installedSteamApps = listInstalledSteamApps(config)) {
   const results = [];
   const platform = getPlatformKey();
-  const installedSteam = new Map(listInstalledSteamApps(config).map(app => [String(app.appid), app]));
+  const installedSteam = new Map(installedSteamApps.map(app => [String(app.appid), app]));
 
   for (const game of knownGames) {
     const configuredPath = getSavePathForCurrentPlatform(game, platform);
     const sourcePath = expandPath(configuredPath);
     const installed = game.steam_appid ? installedSteam.has(String(game.steam_appid)) : false;
-    const detected = game.steam_appid ? installed : pathExists(sourcePath);
+    const detected = game.steam_appid ? installed && pathExists(sourcePath) : pathExists(sourcePath);
     if (sourcePath && detected) {
       results.push({
         id: game.id,
@@ -184,22 +184,45 @@ export function detectKnownGame(gameId) {
 }
 
 export function scanLaunchers(config = readConfig()) {
-  const detected = scanSystem(config);
-  const monitored = new Set(listGames().map(game => game.id));
-  return detected.map(game => ({
-    name: game.name,
-    id: game.id,
-    platform: game.platform,
-    steam_appid: game.steam_appid || null,
-    save_path: game.source_path,
-    source_path: game.source_path,
-    extensions: game.extensions || [],
-    save_type: game.save_type || 'file',
-    found_in_system: pathExists(game.source_path),
-    already_monitored: monitored.has(game.id),
-    cloud_save: game.cloud_save,
-    cloud_status: game.cloud_status
+  const installedSteamApps = listInstalledSteamApps(config);
+  const detected = scanSystem(config, installedSteamApps);
+  const monitoredGames = listGames();
+  const monitoredIds = new Set(monitoredGames.map(game => game.id));
+  const monitoredSteamIds = new Set(monitoredGames.map(game => String(game.steam_appid || '')).filter(Boolean));
+  const representedSteamIds = new Set(detected.map(game => String(game.steam_appid || '')).filter(Boolean));
+  const rows = detected.map(game => toScanRow(game, {
+    alreadyMonitored: monitoredIds.has(game.id),
+    installed: game.steam_appid
+      ? installedSteamApps.some(app => String(app.appid) === String(game.steam_appid))
+      : pathExists(game.source_path)
   }));
+
+  for (const app of installedSteamApps) {
+    const appid = String(app.appid);
+    if (representedSteamIds.has(appid)) continue;
+    const known = knownGames.find(game => String(game.steam_appid || '') === appid);
+    const expectedPath = known ? expandPath(getSavePathForCurrentPlatform(known)) : null;
+    const cloudPath = findSteamCloudSavePath(appid, config);
+    const sourcePath = pathExists(expectedPath) ? expectedPath : cloudPath;
+    const id = known?.id || `steam-${appid}`;
+    rows.push(toScanRow({
+      id,
+      name: known?.name || app.name,
+      platform: known?.platform || 'steam',
+      steam_appid: appid,
+      source_path: sourcePath,
+      extensions: known?.extensions || [],
+      save_type: normalizeSaveType(known?.save_type || 'directory'),
+      cloud_save: Boolean(known?.cloud_save || cloudPath),
+      cloud_status: getSteamCloudStatus(appid, config),
+      install_dir: app.install_dir
+    }, {
+      alreadyMonitored: monitoredIds.has(id) || monitoredSteamIds.has(appid),
+      installed: true
+    }));
+  }
+
+  return rows.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export function identifySavePath(inputPath) {
@@ -355,4 +378,26 @@ function listFiles(root, maxDepth = 2, depth = 0, state = { remaining: 5_000 }) 
     }
   }
   return files;
+}
+
+function toScanRow(game, { alreadyMonitored, installed }) {
+  const saveFound = pathExists(game.source_path);
+  return {
+    name: game.name,
+    id: game.id,
+    platform: game.platform,
+    steam_appid: game.steam_appid || null,
+    save_path: saveFound ? game.source_path : null,
+    source_path: saveFound ? game.source_path : null,
+    install_dir: game.install_dir || null,
+    extensions: game.extensions || [],
+    save_type: game.save_type || 'file',
+    installed: Boolean(installed),
+    found_in_system: saveFound,
+    requires_path: !saveFound,
+    can_import: saveFound && !alreadyMonitored,
+    already_monitored: Boolean(alreadyMonitored),
+    cloud_save: Boolean(game.cloud_save),
+    cloud_status: game.cloud_status || 'unknown'
+  };
 }

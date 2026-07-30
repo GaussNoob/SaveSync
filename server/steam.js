@@ -3,11 +3,20 @@ import os from 'node:os';
 import path from 'node:path';
 import { expandPath, pathExists } from './utils.js';
 
+const NON_GAME_APP_IDS = new Set(['228980']);
+const NON_GAME_NAMES = [
+  /^steamworks common redistributables$/i,
+  /^proton \d/i,
+  /^steam linux runtime/i
+];
+
 export function parseVdf(content) {
   const tokens = [];
   const regex = /"((?:\\.|[^"\\])*)"|([{}])/g;
   let match;
-  while ((match = regex.exec(content))) tokens.push(match[1] ?? match[2]);
+  while ((match = regex.exec(content))) {
+    tokens.push(match[1] === undefined ? match[2] : decodeVdfString(match[1]));
+  }
   let cursor = 0;
 
   function parseObject() {
@@ -31,10 +40,13 @@ export function parseVdf(content) {
 export function getDefaultSteamPaths() {
   const home = os.homedir();
   if (process.platform === 'win32') {
-    return [
+    return uniquePaths([
+      process.env.STEAM_PATH,
+      process.env['ProgramFiles(x86)'] && path.join(process.env['ProgramFiles(x86)'], 'Steam'),
+      process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'Steam'),
       'C:\\Program Files (x86)\\Steam',
       'C:\\Program Files\\Steam'
-    ];
+    ]);
   }
   if (process.platform === 'darwin') {
     return [path.join(home, 'Library', 'Application Support', 'Steam')];
@@ -49,7 +61,7 @@ export function findSteamRoots(config = {}) {
   const configured = config.steam?.userdata_path
     ? [path.dirname(expandPath(config.steam.userdata_path))]
     : [];
-  return [...configured, ...getDefaultSteamPaths()].filter(pathExists);
+  return uniquePaths([...configured, ...getDefaultSteamPaths()]).filter(pathExists);
 }
 
 export function readLibraryFolders(steamRoot) {
@@ -61,7 +73,7 @@ export function readLibraryFolders(steamRoot) {
     const libraries = Object.values(folders)
       .filter(value => typeof value === 'object' && value.path)
       .map(value => path.join(value.path, 'steamapps'));
-    return [path.join(steamRoot, 'steamapps'), ...libraries].filter(pathExists);
+    return uniquePaths([path.join(steamRoot, 'steamapps'), ...libraries]).filter(pathExists);
   } catch (error) {
     console.warn(`Failed to parse ${file}: ${error.message}`);
     return [path.join(steamRoot, 'steamapps')];
@@ -78,9 +90,11 @@ export function listInstalledSteamApps(config = {}) {
           const parsed = parseVdf(fs.readFileSync(manifestPath, 'utf8'));
           const state = parsed.AppState || parsed.appstate || {};
           if (!state.appid) continue;
+          const name = state.name || `Steam App ${state.appid}`;
+          if (isNonGameSteamApp(state.appid, name)) continue;
           apps.set(state.appid, {
             appid: state.appid,
-            name: state.name || `Steam App ${state.appid}`,
+            name,
             install_dir: state.installdir ? path.join(steamapps, 'common', state.installdir) : null,
             steamapps
           });
@@ -90,13 +104,13 @@ export function listInstalledSteamApps(config = {}) {
       }
     }
   }
-  return [...apps.values()];
+  return [...apps.values()].sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export function getSteamUserdataPaths(config = {}) {
   const configured = config.steam?.userdata_path ? [expandPath(config.steam.userdata_path)] : [];
   const discovered = findSteamRoots(config).map(root => path.join(root, 'userdata'));
-  return [...configured, ...discovered].filter(pathExists);
+  return uniquePaths([...configured, ...discovered]).filter(pathExists);
 }
 
 export function listSteamUsers(config = {}) {
@@ -122,17 +136,29 @@ export function readLocalConfig(userPath) {
 }
 
 export function getSteamCloudStatus(appid, config = {}) {
-  let found = false;
+  let found = Boolean(findSteamCloudSavePath(appid, config));
   let enabled = false;
   for (const user of listSteamUsers(config)) {
-    const remote = path.join(user.userdata_path, appid, 'remote');
-    if (pathExists(remote)) found = true;
     const localConfig = readLocalConfig(user.userdata_path);
     const apps = localConfig.UserLocalConfigStore?.Software?.Valve?.Steam?.Apps || {};
     const appConfig = apps[appid] || {};
     if (String(appConfig.Cloud || appConfig.cloud || '').toLowerCase() === '1') enabled = true;
   }
   return enabled ? 'enabled' : found ? 'available' : 'unknown';
+}
+
+export function findSteamCloudSavePath(appid, config = {}) {
+  const safeAppId = String(appid || '');
+  if (!/^\d{1,10}$/.test(safeAppId)) return null;
+  const candidates = listSteamUsers(config)
+    .map(user => path.join(user.userdata_path, safeAppId, 'remote'))
+    .filter(pathExists)
+    .map(candidate => ({
+      path: candidate,
+      modifiedAt: safeModifiedAt(candidate)
+    }))
+    .sort((left, right) => right.modifiedAt - left.modifiedAt);
+  return candidates[0]?.path || null;
 }
 
 export function disableSteamCloudForApp(appid, config = {}) {
@@ -224,5 +250,35 @@ function safeReaddir(dir) {
     return fs.readdirSync(dir);
   } catch {
     return [];
+  }
+}
+
+function decodeVdfString(value) {
+  return value.replace(/\\(["\\])/g, '$1');
+}
+
+function isNonGameSteamApp(appid, name) {
+  return NON_GAME_APP_IDS.has(String(appid)) || NON_GAME_NAMES.some(pattern => pattern.test(name));
+}
+
+function uniquePaths(values) {
+  const seen = new Set();
+  const result = [];
+  for (const value of values) {
+    if (!value) continue;
+    const normalized = path.resolve(value);
+    const key = process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function safeModifiedAt(target) {
+  try {
+    return fs.statSync(target).mtimeMs;
+  } catch {
+    return 0;
   }
 }

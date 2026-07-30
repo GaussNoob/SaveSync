@@ -53,6 +53,12 @@ O rclone mantém o lock durante o `bisync` porque ele altera o mesmo arquivo de 
 - Configuração YAML e sondagens curtas do runtime rclone usam cache com invalidação controlada.
 - Linhas do rclone são entregues ao WebSocket imediatamente, mas persistidas no SQLite em lotes.
 - O parser VDF usa cursor linear, evitando remoções sucessivas do início de arrays.
+- O scanner da Steam separa a presença do jogo da descoberta do save: manifests
+  instalados sempre aparecem, mas somente caminhos de save validados podem ser
+  importados. Pastas de instalação nunca são monitoradas como fallback.
+- Salvar ou sincronizar um provider conectado persiste `cloud.enabled` e os
+  demais parâmetros antes de iniciar o rclone. Notificações idênticas são
+  deduplicadas e a fila visual é limitada.
 - Scans e snapshots têm limite de 100.000 entradas para evitar uso não limitado de CPU, memória e I/O.
 - Respostas normais do dashboard têm timeout; operações de snapshot/restore/sync usam limites explícitos maiores.
 

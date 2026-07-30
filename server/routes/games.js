@@ -97,6 +97,7 @@ router.post('/bulk', async (req, res) => {
           id: detected.id,
           name: detected.name,
           platform: detected.platform || 'emulator',
+          steam_appid: detected.steam_appid || null,
           source_path: detected.save_path || detected.source_path,
           extensions: detected.extensions || [],
           save_type: detected.save_type || 'file',

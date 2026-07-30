@@ -2583,21 +2583,33 @@
     @apply max-h-[380px] overflow-auto rounded-md border border-line bg-black/20;
   }
 
-  .scan-results > label,
+  .scan-results > .scan-row,
   .scan-skeleton > div {
     @apply grid min-h-[64px] grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-3.5 border-b border-line/70 px-3.5 last:border-b-0;
   }
 
-  .scan-results > label {
+  .scan-results > .scan-row {
     @apply cursor-pointer transition-colors duration-ui ease-ui hover:bg-accent/[0.06];
   }
 
-  .scan-results > label.disabled {
+  .scan-results > .scan-row.requires-path {
+    @apply cursor-default;
+  }
+
+  .scan-results > .scan-row.disabled {
     @apply cursor-not-allowed opacity-50;
   }
 
-  .scan-results > label > span:nth-child(2) {
+  .scan-results > .scan-row > span:nth-child(2) {
     @apply min-w-0;
+  }
+
+  .scan-row-status {
+    @apply flex items-center justify-end gap-2;
+  }
+
+  .scan-row-status .button {
+    @apply h-7 px-2.5 text-[9px];
   }
 
   .scan-results strong,
@@ -2799,13 +2811,20 @@
 }
 
 @media (max-width: 480px) {
-  .scan-results > label,
+  .scan-results > .scan-row,
   .scan-skeleton > div {
     @apply grid-cols-[20px_minmax(0,1fr)] gap-2.5;
   }
 
-  .scan-results > label > .status-badge,
   .scan-skeleton > div > :last-child {
+    @apply hidden;
+  }
+
+  .scan-results > .scan-row > .scan-row-status {
+    @apply col-start-2 justify-start pb-2.5;
+  }
+
+  .scan-row-status > .status-badge {
     @apply hidden;
   }
 

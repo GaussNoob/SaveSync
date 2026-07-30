@@ -1,6 +1,6 @@
 {
   "name": "savesync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Versionamento e sincronização self-hosted de saves de jogos.",
   "author": "GaussNoob",
   "private": true,

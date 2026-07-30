@@ -279,16 +279,18 @@ async function disconnect() {
 }
 
 async function syncNow(resyncRequested = false) {
+  if (syncing.value || savingConfig.value) return;
   const resync = resyncRequested === true;
   syncing.value = true;
   error.value = '';
   needsResync.value = false;
-  realtime.markSyncing(resync ? 'Reconstruindo baseline do bisync' : 'Sincronizando Google Drive');
-  ui.notify({
-    title: resync ? 'Reconstrução iniciada' : 'Sincronização iniciada',
-    description: 'O rclone está processando as versões locais e remotas.'
-  });
   try {
+    await persistCloudConfig();
+    realtime.markSyncing(resync ? 'Reconstruindo baseline do bisync' : 'Sincronizando Google Drive');
+    ui.notify({
+      title: resync ? 'Reconstrução iniciada' : 'Sincronização iniciada',
+      description: 'O rclone está processando as versões locais e remotas.'
+    });
     const result = await api('/cloud/sync-now', {
       method: 'POST',
       body: JSON.stringify(resync ? { resync: true, confirm_resync: true } : {}),
@@ -319,29 +321,14 @@ async function syncNow(resyncRequested = false) {
 }
 
 async function saveConfig() {
-  const remotePath = String(configForm.value.remote_path || '').trim();
-  const interval = Number(configForm.value.sync_interval_minutes);
-  error.value = '';
-  if (!remotePath) {
-    error.value = 'Informe a pasta de destino no Google Drive.';
-    return;
-  }
-  if (!Number.isFinite(interval) || interval < 1) {
-    error.value = 'O intervalo precisa ser de pelo menos 1 minuto.';
-    return;
-  }
+  if (savingConfig.value || syncing.value) return;
   savingConfig.value = true;
+  error.value = '';
   try {
-    await api('/cloud/config', {
-      method: 'POST',
-      body: JSON.stringify({
-        remote_path: remotePath,
-        sync_interval_minutes: Math.floor(interval)
-      })
-    });
+    await persistCloudConfig();
     ui.notify({
       title: 'Configuração de nuvem salva',
-      description: 'O próximo ciclo usará os novos parâmetros.',
+      description: 'A sincronização em nuvem está ativa com os novos parâmetros.',
       tone: 'success'
     });
     emit('updated');
@@ -355,6 +342,32 @@ async function saveConfig() {
   } finally {
     savingConfig.value = false;
   }
+}
+
+async function persistCloudConfig() {
+  const config = normalizedCloudConfig();
+  await api('/cloud/config', {
+    method: 'POST',
+    body: JSON.stringify({
+      enabled: true,
+      ...config
+    })
+  });
+}
+
+function normalizedCloudConfig() {
+  const remotePath = String(configForm.value.remote_path || '').trim();
+  const interval = Number(configForm.value.sync_interval_minutes);
+  if (!remotePath) {
+    throw new Error('Informe a pasta de destino no Google Drive.');
+  }
+  if (!Number.isFinite(interval) || interval < 1 || interval > 1440) {
+    throw new Error('O intervalo precisa ficar entre 1 e 1440 minutos.');
+  }
+  return {
+    remote_path: remotePath,
+    sync_interval_minutes: Math.floor(interval)
+  };
 }
 
 function retry() {
@@ -499,11 +512,11 @@ onUnmounted(stopPolling);
       </div>
 
       <div class="provider-actions">
-        <button class="button button-secondary" :disabled="savingConfig" @click="saveConfig">
+        <button class="button button-secondary" :disabled="savingConfig || syncing" @click="saveConfig">
           <Save :size="14" />
           {{ savingConfig ? 'Salvando…' : 'Salvar' }}
         </button>
-        <button class="button button-primary" :disabled="syncing" @click="syncNow(false)">
+        <button class="button button-primary" :disabled="syncing || savingConfig" @click="syncNow(false)">
           <RefreshCw :size="14" :class="{ spinning: syncing }" />
           {{ syncing ? 'Sincronizando' : 'Sincronizar agora' }}
         </button>

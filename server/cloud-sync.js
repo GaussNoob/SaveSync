@@ -64,7 +64,9 @@ export function runCloudSyncNow({ resync = false, reason = 'manual' } = {}) {
 
 async function performCloudSync({ resync, reason }) {
   const config = readConfig();
-  if (!config.cloud?.enabled) return { ok: false, error: 'Cloud sync disabled in config.yaml' };
+  if (config.cloud?.enabled !== true) {
+    return { ok: false, error: 'A sincronização em nuvem está desativada nas configurações.' };
+  }
 
   try {
     const version = await rcloneVersion();

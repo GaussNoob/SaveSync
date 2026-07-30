@@ -136,6 +136,7 @@ async function getGoogleDriveProvider() {
     name: 'Google Drive',
     icon: 'google-drive',
     connected: false,
+    enabled: config.cloud?.enabled === true,
     last_sync: dbStatus.last_sync,
     files_synced: dbStatus.files_synced,
     account_email: null,
@@ -203,6 +204,12 @@ router.post('/sync-now', async (req, res) => {
   const requestedResync = req.body?.resync === true;
   if (requestedResync && req.body?.confirm_resync !== true) {
     return res.status(400).json({ error: 'Confirme a reconstrução do baseline com confirm_resync=true.' });
+  }
+  const config = readConfig();
+  if (config.cloud?.enabled !== true && await hasGoogleDriveToken()) {
+    enableGoogleDriveConfig();
+    invalidateCloudStatusCache();
+    scheduleCloudSync();
   }
   const result = await runCloudSyncNow({ reason: 'api', resync: requestedResync });
   res.status(result.ok ? 200 : 409).json(result);
@@ -434,6 +441,7 @@ router.post('/config', async (req, res) => {
       remote_name: config.cloud?.remote_name || GOOGLE_DRIVE_REMOTE
     };
 
+    if (req.body?.enabled !== undefined) cloud.enabled = req.body.enabled === true;
     if (remote_path !== undefined) cloud.remote_path = normalizeRemotePath(remote_path);
     if (sync_interval_minutes !== undefined) cloud.sync_interval_minutes = normalizeSyncInterval(sync_interval_minutes);
 
