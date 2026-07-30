@@ -1,6 +1,6 @@
 FROM rclone/rclone:1.74.3 AS rclone
 
-FROM node:22-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 WORKDIR /app
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 COPY package.json package-lock.json ./
@@ -11,7 +11,7 @@ COPY postcss.config.js tailwind.config.js ./
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \
