@@ -1,5 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 import { deleteGame, getGame, listGames, setGameEnabled, upsertGame } from '../db.js';
 import {
   detectKnownGame,
@@ -53,8 +54,7 @@ router.post('/', async (req, res) => {
       ? toGameRecordFromKnown(req.body.game_id, req.body.source_path || req.body.save_path, req.body.enabled !== false)
       : null;
     const game = fromKnown || {
-      id: `custom-${randomUUID()}`,
-      name: normalizeName(req.body.name),
+      name: req.body.name,
       platform: normalizePlatform(req.body.platform),
       steam_appid: null,
       source_path: req.body.source_path || req.body.save_path,
@@ -64,9 +64,9 @@ router.post('/', async (req, res) => {
       cloud_status: 'manual',
       enabled: req.body.enabled !== false
     };
-    game.id = assertGameId(game.id);
     game.name = normalizeName(game.name);
     game.source_path = validateGameSourcePath(game.source_path);
+    game.id = assertGameId(game.id || createCustomGameId(game.source_path, game.name));
     await withDataLock(`game:add:${game.id}`, () => upsertGame(game));
     await startWatcher();
     return res.status(201).json(getGame(game.id));
@@ -233,4 +233,19 @@ function normalizeMonitorMode(input) {
   const value = String(input || 'sync');
   if (!['sync', 'readonly'].includes(value)) throw new InputError('Modo de monitoramento inválido.');
   return value;
+}
+
+function createCustomGameId(sourcePath, fallbackName) {
+  const folderName = path.basename(sourcePath);
+  const readableName = slugifyIdPart(folderName) || slugifyIdPart(fallbackName) || 'save';
+  return `custom-${readableName.slice(0, 64)}-${randomUUID()}`;
+}
+
+function slugifyIdPart(input) {
+  return String(input || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
