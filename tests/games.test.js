@@ -137,7 +137,7 @@ describe('games API', () => {
       expect.objectContaining({
         id: 'steam-999000',
         steam_appid: '999000',
-        source_path: steamRemote
+        source_path: fs.realpathSync.native(steamRemote)
       })
     ]);
   });
