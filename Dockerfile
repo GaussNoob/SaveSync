@@ -1,4 +1,4 @@
-FROM rclone/rclone:1.74.3 AS rclone
+FROM rclone/rclone:1.75.0 AS rclone
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
